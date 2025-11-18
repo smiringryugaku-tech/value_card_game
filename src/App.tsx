@@ -34,7 +34,6 @@ function App() {
   const [room, setRoom] = useState<Room | null>(null);
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isStartingGame, setIsStartingGame] = useState(false);
 
   const [turnStartTime, setTurnStartTime] = useState<number | null>(null);
 
@@ -113,7 +112,6 @@ function App() {
     if (!room) return;
   
     setErrorMessage(null);
-    setIsStartingGame(true);
   
     try {
       if (playerId && room.hostId !== playerId) {
@@ -128,8 +126,6 @@ function App() {
       } else {
         setErrorMessage("ゲーム開始に失敗しました。");
       }
-    } finally {
-      setIsStartingGame(false);
     }
   };
 

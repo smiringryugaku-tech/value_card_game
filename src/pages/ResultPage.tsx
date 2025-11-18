@@ -33,6 +33,7 @@ export function ResultPage({ room, players }: ResultPageProps) {
                 border: "1px solid #ccc",
                 borderRadius: 8,
                 padding: "0.75rem",
+                color: "#333",
                 backgroundColor: "#fafafa",
               }}
             >
@@ -55,6 +56,7 @@ export function ResultPage({ room, players }: ResultPageProps) {
                       style={{
                         padding: "0.4rem 0.6rem",
                         borderRadius: 6,
+                        color: "#333",
                         border: "1px solid #ccc",
                         backgroundColor: "#fff",
                         fontSize: "0.9rem",

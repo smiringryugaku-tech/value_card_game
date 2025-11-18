@@ -80,6 +80,7 @@ export function GameBoardPage({
                   border: "1px solid #ccc",
                   borderRadius: 8,
                   padding: "0.5rem 0.75rem",
+                  color: "#333",
                   backgroundColor: isActive ? "#ffe" : "#fafafa",
                   flexShrink: 0,
                 }}
@@ -162,7 +163,7 @@ export function GameBoardPage({
               backgroundColor: "#f8f8f8",
             }}
           >
-            <p style={{ marginTop: 0, marginBottom: "0.5rem" }}>
+            <p style={{ marginTop: 0, marginBottom: "0.5rem", color: "#333" }}>
               山札（残り {deckCount} 枚）
             </p>
             <button
@@ -208,6 +209,7 @@ export function GameBoardPage({
                     padding: "0.5rem 0.75rem",
                     borderRadius: 6,
                     border: "1px solid #ccc",
+                    color: "#333",
                     backgroundColor: canDiscard ? "#fff" : "#eee",
                     cursor: canDiscard ? "pointer" : "default",
                   }}
