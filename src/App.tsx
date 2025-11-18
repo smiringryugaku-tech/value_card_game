@@ -1,4 +1,3 @@
-// src/App.tsx
 import { useEffect, useState } from "react";
 import "./App.css";
 import { TitlePage } from "./pages/TitlePage";
@@ -173,13 +172,17 @@ function App() {
       if (!snap.exists()) return;
       const data = snap.data() as Room;
       setRoom(data);
-  
-      const list: Player[] = Object.entries(data.players ?? {}).map(
-        ([id, p]) => ({
+
+      const playersMap = data.players ?? {};
+      const order: string[] = Object.keys(playersMap).sort((a, b) => a.localeCompare(b));
+
+      const list: Player[] = order
+        .filter((id) => playersMap[id])
+        .map((id) => ({
           id,
-          name: p.name,
-        })
-      );
+          name: playersMap[id].name,
+        }));
+
       setPlayers(list);
       setCardCount(data.cardCount);
   

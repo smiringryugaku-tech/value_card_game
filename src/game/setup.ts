@@ -18,7 +18,7 @@ export function createInitialGameState(
   | "turnIndex"
   | "turnPhase"
 > {
-  const playerIds = Object.keys(room.players);
+  const playerIds = Object.keys(room.players).sort((a, b) => a.localeCompare(b));
   if (playerIds.length === 0) {
     throw new Error("プレイヤーがいません。");
   }
