@@ -1,5 +1,6 @@
 // src/pages/GameBoardPage.tsx
 import type { CardId, Player, Room } from "../types";
+import { getCardImageUrl } from "../utils/cardImage";
 
 type GameBoardPageProps = {
   room: Room;
@@ -118,8 +119,17 @@ export function GameBoardPage({
                     backgroundColor: "#fff",
                   }}
                 >
-                  {playerDiscards.map((cardId, idx) => (
-                    <div key={idx}>カード {cardId}</div>
+                  {playerDiscards.map((cardId) => (
+                    <img
+                      src={getCardImageUrl(cardId)}
+                      alt={`カード ${cardId}`}
+                      style={{
+                        display: "block",
+                        width: "60px",
+                        height: "90px",
+                        objectFit: "cover",
+                      }}
+                    />
                   ))}
                 </div>
 
@@ -134,7 +144,7 @@ export function GameBoardPage({
                     // ★ 自分のターン & draw フェーズのときだけ押せる
                     disabled={!canDraw}
                   >
-                    この山の一番上を引く（カード {topCard}）
+                    このリストの一番下を引く（カード {topCard}）
                   </button>
                 )}
               </div>
@@ -214,7 +224,16 @@ export function GameBoardPage({
                     cursor: canDiscard ? "pointer" : "default",
                   }}
                 >
-                  {cardId}
+                <img
+                  src={getCardImageUrl(cardId)}
+                  alt={`カード ${cardId}`}
+                  style={{
+                    display: "block",
+                    width: "120px",
+                    height: "180px",
+                    objectFit: "cover",
+                  }}
+                />
                 </button>
               ))}
               {myHand.length === 0 && (

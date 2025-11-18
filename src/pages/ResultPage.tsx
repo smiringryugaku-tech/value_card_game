@@ -1,5 +1,6 @@
 // src/pages/ResultPage.tsx
 import type { Player, Room } from "../types";
+import {getCardImageUrl} from "../utils/cardImage";
 
 type ResultPageProps = {
   room: Room;
@@ -62,7 +63,16 @@ export function ResultPage({ room, players }: ResultPageProps) {
                         fontSize: "0.9rem",
                       }}
                     >
-                      {cardId}
+                      <img
+                        src={getCardImageUrl(cardId)}
+                        alt={`カード ${cardId}`}
+                        style={{
+                          display: "block",
+                          width: "120px",
+                          height: "180px",
+                          objectFit: "cover",
+                        }}
+                      />
                     </span>
                   ))}
                 </div>
