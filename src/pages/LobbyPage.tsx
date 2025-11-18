@@ -48,8 +48,8 @@ export function LobbyPage({
               <input
                 type="range"
                 min={20}
-                max={100}
-                step={5}
+                max={94}
+                step={1}
                 value={cardCount}
                 onChange={handleSliderChange}
                 style={{ display: "block", width: "100%" }}
@@ -65,7 +65,7 @@ export function LobbyPage({
 
       {!isHost && (
         <p style={{ marginTop: "1.5rem" }}>
-          ホストが設定を完了するまでお待ちください。
+          ホストがゲームをスタートするまでお待ちください。
         </p>
       )}
     </div>

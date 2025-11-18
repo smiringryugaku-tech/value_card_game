@@ -18,7 +18,7 @@ export function TitlePage({ onSubmit }: TitlePageProps) {
 
   return (
     <div style={{ padding: "2rem", maxWidth: 640, margin: "0 auto" }}>
-      <h1>カードゲームへようこそ</h1>
+      <h1>価値観カードゲーム！</h1>
 
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: "1rem" }}>

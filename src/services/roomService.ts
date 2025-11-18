@@ -1,7 +1,6 @@
 import {
     doc,
     getDoc,
-    setDoc,
     updateDoc,
     runTransaction,
     serverTimestamp,
@@ -14,6 +13,18 @@ import {
     applyDrawFromDiscard,
     applyDiscardAndAdvance,
   } from "../game/turn";
+
+  const ONE_HOUR_MS = 60 * 60 * 1000;
+
+  function isRoomStale(room: Room): boolean {
+    const updated = room.updatedAt;
+    if (!updated || typeof (updated as any).toMillis !== "function") {
+      return true;
+    }
+    const updatedMs = (updated as any).toMillis() as number;
+    const nowMs = Date.now();
+    return nowMs - updatedMs > ONE_HOUR_MS;
+  }
   
   export async function createRoom(
     roomCode: string,
@@ -23,34 +34,69 @@ import {
   ): Promise<Room> {
     const trimmedCode = roomCode.trim().toUpperCase();
     const roomRef = doc(db, "rooms", trimmedCode);
-    const snap = await getDoc(roomRef);
-  
-    if (snap.exists()) {
-      throw new Error("このルームコードはすでに使われています。");
-    }
-  
     const now = serverTimestamp();
+
+    await runTransaction(db, async (tx) => {
+      const snap = await tx.get(roomRef);
   
-    const roomData = {
-      code: trimmedCode,
-      hostId: playerId,
-      status: "waiting" as const,
-      cardCount,
-      players: {
-        [playerId]: {
-          name: playerName,
-          joinedAt: now,
+      if (!snap.exists()) {
+        const newRoom: Room = {
+          code: trimmedCode,
+          hostId: playerId,
+          status: "waiting" as const,
+          cardCount,
+          players: {
+            [playerId]: { name: playerName, joinedAt: now },
+          },
+          deck: [],
+          hands: {},
+          discards: {},
+          discardLogs: {},
+          turnOrder: [playerId],
+          activePlayerId: playerId,
+          turnIndex: 0,
+          turnPhase: "draw",
+          startedAt: now,
+          updatedAt: now,
+        };
+  
+        tx.set(roomRef, newRoom);
+        return;
+      }
+  
+      const existing = snap.data() as Room;
+  
+      if (!isRoomStale(existing)) {
+        throw new Error(
+          "このルームコードは現在使用中です。別のコードを選んでください。"
+        );
+      }
+  
+      const resetRoom: Room = {
+        code: trimmedCode,
+        hostId: playerId,
+        status: "waiting",
+        cardCount,
+        players: {
+          [playerId]: { name: playerName, joinedAt: now },
         },
-      },
-      createdAt: now,
-      updatedAt: now,
-    };
+        deck: [],
+        hands: {},
+        discards: {},
+        discardLogs: {},
+        turnOrder: [playerId],
+        activePlayerId: playerId,
+        turnIndex: 0,
+        turnPhase: "draw",
+        startedAt: now,
+        updatedAt: now,
+      };
   
-    await setDoc(roomRef, roomData);
+      tx.set(roomRef, resetRoom);
+    });
   
-    // TypeScript 的には snap.data() の型を Room に合わせたいけど、
-    // ここでは素直にキャストして返す
-    return roomData as unknown as Room;
+    const finalSnap = await getDoc(roomRef);
+    return finalSnap.data() as Room;
   }
   
   export async function joinRoom(
@@ -158,7 +204,8 @@ export async function drawFromDeck(roomCode: string, playerId: string) {
 export async function drawFromDiscardPile(
   roomCode: string,
   playerId: string,
-  fromPlayerId: string
+  fromPlayerId: string,
+  cardIndex: number,
 ) {
   const trimmedCode = roomCode.trim().toUpperCase();
   const roomRef = doc(db, "rooms", trimmedCode);
@@ -168,7 +215,7 @@ export async function drawFromDiscardPile(
     if (!snap.exists()) throw new Error("ルームが存在しません。");
 
     const room = snap.data() as Room;
-    const update = applyDrawFromDiscard(room, playerId, fromPlayerId);
+    const update = applyDrawFromDiscard(room, playerId, fromPlayerId, cardIndex);
 
     tx.update(roomRef, {
       ...update,

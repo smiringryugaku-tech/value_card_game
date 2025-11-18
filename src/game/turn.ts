@@ -72,7 +72,8 @@ export function applyDrawFromDeck(room: Room, playerId: string): Partial<Room> {
 export function applyDrawFromDiscard(
   room: Room,
   playerId: string,
-  fromPlayerId: string
+  fromPlayerId: string,
+  cardIndex: number
 ): Partial<Room> {
   if (room.activePlayerId !== playerId) {
     throw new Error("あなたのターンではありません。");
@@ -87,8 +88,15 @@ export function applyDrawFromDiscard(
     throw new Error("このプレイヤーの捨て札は空です。");
   }
 
-  const card = pile[pile.length - 1];
-  const restPile = pile.slice(0, pile.length - 1);
+  if (cardIndex < 0 || cardIndex >= pile.length) {
+    throw new Error("指定されたカードは存在しません。");
+  }
+
+  const card = pile[cardIndex];
+  const restPile = [
+    ...pile.slice(0, cardIndex),
+    ...pile.slice(cardIndex + 1),
+  ];
   discards[fromPlayerId] = restPile;
 
   const hands = cloneHands(room.hands);

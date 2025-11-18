@@ -30,7 +30,7 @@ function App() {
 
   const [isHost, setIsHost] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
-  const [cardCount, setCardCount] = useState(100);
+  const [cardCount, setCardCount] = useState(70);
   const [room, setRoom] = useState<Room | null>(null);
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -139,10 +139,10 @@ function App() {
     }
   };
   
-  const handleDrawFromDiscard = async (fromPlayerId: string) => {
+  const handleDrawFromDiscard = async (fromPlayerId: string, cardIndex: number) => {
     if (!room || !playerId) return;
     try {
-      await drawFromDiscardPile(room.code, playerId, fromPlayerId);
+      await drawFromDiscardPile(room.code, playerId, fromPlayerId, cardIndex);
     } catch (err) {
       console.error(err);
       alert((err as Error).message);

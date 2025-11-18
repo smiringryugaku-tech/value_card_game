@@ -7,7 +7,7 @@ type GameBoardPageProps = {
   players: Player[];
   myPlayerId: string;
   onDrawFromDeck: () => void;
-  onDrawFromDiscard: (fromPlayerId: string) => void;
+  onDrawFromDiscard: (fromPlayerId: string, cardIndex: number) => void;
   onDiscard: (cardId: CardId) => void;
 };
 
@@ -67,10 +67,6 @@ export function GameBoardPage({
         >
           {players.map((p) => {
             const playerDiscards = discards[p.id] ?? [];
-            const topCard =
-              playerDiscards.length > 0
-                ? playerDiscards[playerDiscards.length - 1]
-                : null;
             const isActive = p.id === activePlayerId;
 
             return (
@@ -117,41 +113,45 @@ export function GameBoardPage({
                     padding: "0.25rem",
                     fontSize: "0.8rem",
                     backgroundColor: "#fff",
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "0.25rem",
                   }}
                 >
-                  {playerDiscards.map((cardId) => (
-                    <img
-                      src={getCardImageUrl(cardId)}
-                      alt={`カード ${cardId}`}
+                  {playerDiscards.map((cardId, idx) => (
+                    <button
+                      key={`${cardId}-${idx}`}
+                      onClick={() => onDrawFromDiscard(p.id, idx)}
+                      disabled={!canDraw} // 自分のターン & draw フェーズのときだけ
                       style={{
-                        display: "block",
-                        width: "60px",
-                        height: "90px",
-                        objectFit: "cover",
+                        padding: 0,
+                        border: "none",
+                        background: "transparent",
+                        cursor: canDraw ? "pointer" : "default",
                       }}
-                    />
+                    >
+                      <img
+                        src={getCardImageUrl(cardId)}
+                        alt={`カード ${cardId}`}
+                        style={{
+                          display: "block",
+                          width: "60px",
+                          height: "90px",
+                          objectFit: "cover",
+                          opacity: canDraw ? 1 : 0.5,
+                        }}
+                      />
+                    </button>
                   ))}
                 </div>
 
-                {topCard !== null && (
-                  <button
-                    style={{
-                      marginTop: "0.5rem",
-                      width: "100%",
-                      fontSize: "0.8rem",
-                    }}
-                    onClick={() => onDrawFromDiscard(p.id)}
-                    // ★ 自分のターン & draw フェーズのときだけ押せる
-                    disabled={!canDraw}
-                  >
-                    このリストの一番下を引く（カード {topCard}）
-                  </button>
-                )}
+                {/* ★ 一番下の「このリストの一番下を引く」ボタンは削除 */}
               </div>
             );
           })}
         </div>
       </section>
+
 
       {/* 下部：自分の手札＋山札から引くボタン */}
       <section>
