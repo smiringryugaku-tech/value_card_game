@@ -1,0 +1,155 @@
+/* src/pages/TitlePage/TitlePage.css */
+
+.title-root {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 1.5rem;
+}
+
+.title-inner {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.6rem;
+}
+
+/* ロゴ部分（丸く切り抜き） */
+.title-logo-wrapper {
+  width: clamp(120px, 22vw, 150px);
+  height: clamp(120px, 22vw, 150px);
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: #fffaf0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.title-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* タイトル & サブタイトル */
+
+.title-text-block {
+  text-align: center;
+}
+
+.title-main {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 2.3rem);
+  font-weight: 700;
+}
+
+.title-sub {
+  margin-top: 0.8rem;
+  font-size: clamp(0.95rem, 2.2vw, 1.1rem);
+  color: #555;
+}
+
+/* プレイヤー名入力まわり */
+
+.title-form-block {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.title-name-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.title-name-caption {
+  font-size: 0.95rem;
+  color: #444;
+}
+
+.title-name-input {
+  width: min(320px, 80vw);
+  padding: 0.6rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid #d08a2a;
+  font-size: 1rem;
+  text-align: center;
+  box-sizing: border-box;
+  background-color: #fffdf7;
+  margin-bottom: 3rem;
+}
+
+.title-name-input:focus {
+  outline: none;
+  border-color: #d0a963;
+  box-shadow: 0 0 0 2px rgba(208, 169, 99, 0.28);
+}
+
+/* モード選択ボタン（横並び） */
+
+.title-mode-buttons {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.title-mode-button {
+  min-width: 130px;
+  padding: 0.55rem 1.2rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-size: 0.98rem;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.title-mode-button--primary {
+  background-color: #ffffff;
+  border-color: #d0a963;
+  color: #4b2a00;
+}
+
+.title-mode-button--primary:hover:not(:disabled) {
+  background-color: #fff6e5;
+}
+
+.title-mode-button--secondary {
+  background: linear-gradient(135deg, #ffd27f, #ffb74d);
+  border-color: #d08a2a;
+  color: #4b2a00;
+  font-weight: 600;
+}
+
+.title-mode-button--secondary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ffce70, #ffae3a);
+}
+
+/* 無効時 */
+.title-mode-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+  box-shadow: none;
+}
+
+/* スマホで少し詰める */
+@media (max-width: 480px) {
+  .title-root {
+    padding-inline: 1rem;
+  }
+
+  .title-inner {
+    gap: 1.3rem;
+  }
+}

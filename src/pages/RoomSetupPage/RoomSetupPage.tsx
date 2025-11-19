@@ -1,6 +1,7 @@
-// src/pages/RoomSetupPage.tsx
-import { type FormEvent } from "react";
+// src/pages/RoomSetupPage/RoomSetupPage.tsx
+import type { FormEvent } from "react";
 import type { Mode } from "../../types";
+import "./RoomSetupPage.css";
 
 type RoomSetupPageProps = {
   mode: Mode;
@@ -25,42 +26,65 @@ export function RoomSetupPage({
     onSubmit();
   };
 
-  const title =
-    mode === "create" ? "ルームを作成" : "ルームに入る";
+  const mainTitle = mode === "create" ? "ルームを作る" : "ルームに入る";
+  const actionLabel = mode === "create" ? "作成" : "入室";
 
   const description =
     mode === "create"
-      ? "使用したいルームコードを決めてください。（他の人にも共有します）"
+      ? "使用したいルームコードを決めてください。"
       : "参加したいルームコードを入力してください。";
 
   return (
-    <div style={{ padding: "2rem", maxWidth: 480, margin: "0 auto" }}>
-      <button onClick={onBack} style={{ marginBottom: "1rem" }}>
-        ← 戻る
-      </button>
-
-      <h2>{title}</h2>
-      <p>プレイヤー名：{playerName}</p>
-      <p>{description}</p>
-
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: "1rem" }}>
-          <label>
-            ルームコード：
-            <input
-              type="text"
-              value={roomCode}
-              onChange={(e) => onRoomCodeChange(e.target.value.toUpperCase())}
-              style={{ marginLeft: "0.5rem" }}
-              placeholder="例: ABCD"
-            />
-          </label>
-        </div>
-
-        <button type="submit" disabled={!roomCode.trim()}>
-          ルームに進む
+    <div className="room-setup-root">
+      {/* 左上の戻るボタン */}
+      <div className="room-setup-back-row">
+        <button
+          type="button"
+          className="room-setup-back-button"
+          onClick={onBack}
+        >
+          ◀️ 戻る
         </button>
-      </form>
+      </div>
+
+      {/* 中央揃えゾーン */}
+      <div className="room-setup-main">
+        <div className="room-setup-panel">
+          <div className="room-setup-emoji">{mode === "create" ? "🏠" : "🚪"}</div>
+
+          <h1 className="room-setup-title">{mainTitle}</h1>
+
+          <p className="room-setup-player">
+            プレイヤー名：<strong>{playerName}</strong>
+          </p>
+
+          <p className="room-setup-description">{description}</p>
+
+          <form className="room-setup-form" onSubmit={handleSubmit}>
+            <label className="room-setup-label">
+              <span className="room-setup-label-text">ルームコード</span>
+              <input
+                type="text"
+                value={roomCode}
+                onChange={(e) =>
+                  onRoomCodeChange(e.target.value.toUpperCase())
+                }
+                className="room-setup-input"
+                placeholder="例: ABCD"
+                maxLength={8}
+              />
+            </label>
+
+            <button
+              type="submit"
+              className="room-setup-submit"
+              disabled={!roomCode.trim()}
+            >
+              {actionLabel}
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }

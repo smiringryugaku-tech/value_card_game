@@ -1,67 +1,74 @@
-// src/pages/TitlePage.tsx
-import { type FormEvent, useState } from "react";
+// src/pages/TitlePage/TitlePage.tsx
+import { useState } from "react";
 import type { Mode } from "../../types";
+import "./TitlePage.css";
 
 type TitlePageProps = {
-  onSubmit: (name: string, mode: Mode) => void;
+  onSubmit: (playerName: string, mode: Mode) => void;
 };
 
 export function TitlePage({ onSubmit }: TitlePageProps) {
-  const [name, setName] = useState("");
-  const [selectedMode, setSelectedMode] = useState<Mode | null>(null);
+  const [playerName, setPlayerName] = useState("");
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    if (!name.trim() || !selectedMode) return;
-    onSubmit(name.trim(), selectedMode);
+  const handleChooseMode = (mode: Mode) => {
+    const trimmed = playerName.trim();
+    if (!trimmed) return;
+    onSubmit(trimmed, mode);
   };
 
-  return (
-    <div style={{ padding: "2rem", maxWidth: 640, margin: "0 auto" }}>
-      <h1>価値観カードゲーム！</h1>
+  const disabled = playerName.trim().length === 0;
 
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: "1rem" }}>
-          <label>
-            名前：
+  return (
+    <div className="title-root">
+      <div className="title-inner">
+        {/* ロゴ */}
+        <div className="title-logo-wrapper">
+          <img
+            src="/images/logo.png"
+            alt="ゲームロゴ"
+            className="title-logo-img"
+          />
+        </div>
+
+        {/* タイトル & サブタイトル */}
+        <div className="title-text-block">
+          <h1 className="title-main">❤️‍🔥 価値観カードゲーム 🌈✨</h1>
+          <p className="title-sub">あなたの人生における大切な要素を見つけよう！</p>
+        </div>
+
+        {/* 中央付近：プレイヤー名入力 + モード選択ボタン */}
+        <div className="title-form-block">
+          <label className="title-name-label">
+            <span className="title-name-caption">プレイヤー名を入力</span>
             <input
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              style={{ marginLeft: "0.5rem" }}
-              placeholder="プレイヤー名を入力"
+              className="title-name-input"
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              placeholder="例: たろう / Taro"
             />
           </label>
-        </div>
 
-        <div style={{ marginBottom: "1rem" }}>
-          <p>モードを選んでください：</p>
-          <label style={{ marginRight: "1rem" }}>
-            <input
-              type="radio"
-              name="mode"
-              value="create"
-              checked={selectedMode === "create"}
-              onChange={() => setSelectedMode("create")}
-            />
-            ルームを作成
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="mode"
-              value="join"
-              checked={selectedMode === "join"}
-              onChange={() => setSelectedMode("join")}
-            />
-            ルームに入る
-          </label>
+          <div className="title-mode-buttons">
+            <button
+              type="button"
+              className="title-mode-button title-mode-button--primary"
+              disabled={disabled}
+              onClick={() => handleChooseMode("create")}
+            >
+              🏠 ルームを作る
+            </button>
+            <button
+              type="button"
+              className="title-mode-button title-mode-button--secondary"
+              disabled={disabled}
+              onClick={() => handleChooseMode("join")}
+            >
+              🚪 ルームに入る
+            </button>
+          </div>
         </div>
-
-        <button type="submit" disabled={!name.trim() || !selectedMode}>
-          つぎへ
-        </button>
-      </form>
+      </div>
     </div>
   );
 }
