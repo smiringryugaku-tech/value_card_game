@@ -44,9 +44,9 @@ export function GameBoardPage({
   let instruction: string | null = null;
   if (isMyTurn) {
     if (phase === "draw") {
-      instruction = "山札または捨て札からカードを一枚取ろう！";
+      instruction = "山札または捨て札からカードを1枚引こう！";
     } else if (phase === "discard") {
-      instruction = "手札から一枚カードを捨てよう！";
+      instruction = "手札から1枚カードを捨てよう！";
     }
   }
 

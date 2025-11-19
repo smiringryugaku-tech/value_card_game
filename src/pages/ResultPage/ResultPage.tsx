@@ -1,86 +1,177 @@
-// src/pages/ResultPage.tsx
-import type { Player, Room } from "../../types";
-import {getCardImageUrl} from "../../utils/cardImage";
+// src/pages/ResultPage/ResultPage.tsx
+import { useEffect, useState } from "react";
+import "./ResultPage.css";
+import type { Room, Player, CardId } from "../../types";
+import { cardDict, getCardImageUrl } from "../../utils/cardImage";
 
 type ResultPageProps = {
   room: Room;
   players: Player[];
+  myPlayerId: string;
 };
 
-export function ResultPage({ room, players }: ResultPageProps) {
-  const hands = room.hands ?? {};
+function getCardTexts(cardId: CardId) {
+  const info = (cardDict as any)[cardId];
+  if (!info) return { jp: `カード ${cardId}`, en: "" };
+  return { jp: info.japanese, en: info.english };
+}
+
+export function ResultPage({ room, players, myPlayerId }: ResultPageProps) {
+  const [isNarrow, setIsNarrow] = useState(false);
+
+  useEffect(() => {
+    const update = () => {
+      setIsNarrow(window.innerWidth < 720);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  const myHand = (room.hands?.[myPlayerId] ?? []).slice(0, 5);
+  const myPlayer = players.find((p) => p.id === myPlayerId);
+  const myName = myPlayer?.name ?? "あなた";
+
+  const otherPlayers = players.filter((p) => p.id !== myPlayerId);
+
+  const handlePlayAgain = () => {
+    alert("もう一度遊ぶ（あとで実装するよ！）");
+  };
+
+  const handleAnalyze = () => {
+    alert("AI分析（あとで実装するよ！）");
+  };
+
+  const mySlots: Array<CardId | null> = Array.from(
+    { length: 5 },
+    (_, i) => myHand[i] ?? null
+  );
+
+  type SlotVariant = "single" | "multi";
+  const renderSlot = (cardId: CardId | null, key: string, variant: SlotVariant) => {
+    const baseClass = [
+      "result-my-card-slot",
+      variant === "single" ? "result-my-card-slot--single" : "",
+      cardId == null ? "result-my-card-slot--empty" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+  
+    if (cardId == null) {
+      return <div key={key} className={baseClass} />;
+    }
+  
+    const { jp } = getCardTexts(cardId);
+  
+    return (
+      <div key={key} className={baseClass}>
+        <img
+          src={getCardImageUrl(cardId)}
+          alt={jp || `カード ${cardId}`}
+          className="result-my-card-image"
+        />
+      </div>
+    );
+  };
 
   return (
-    <div style={{ padding: "1.5rem", maxWidth: 960, margin: "0 auto" }}>
-      <h2 style={{ marginBottom: "0.5rem" }}>ゲーム結果</h2>
-      <p style={{ marginTop: 0, marginBottom: "1.5rem" }}>
-        最後に各プレイヤーが持っていたカードです。
-      </p>
+    <div className="result-root">
+      {/* 上部のボタン＋ヘッダー */}
+      <div className="result-actions-row">
+        <button
+          type="button"
+          className="result-btn result-btn-primary"
+          onClick={handlePlayAgain}
+        >
+          もう一度遊ぶ
+        </button>
+        <button
+          type="button"
+          className="result-btn result-btn-secondary"
+          onClick={handleAnalyze}
+        >
+          AI分析
+        </button>
+      </div>
 
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "1rem",
-        }}
-      >
-        {players.map((p) => {
-          const playerHand = hands[p.id] ?? [];
-          return (
-            <div
-              key={p.id}
-              style={{
-                flex: "1 1 200px",
-                border: "1px solid #ccc",
-                borderRadius: 8,
-                padding: "0.75rem",
-                color: "#333",
-                backgroundColor: "#fafafa",
-              }}
-            >
-              <h3 style={{ marginTop: 0, marginBottom: "0.5rem" }}>
-                {p.name}
-              </h3>
-              {playerHand.length === 0 ? (
-                <p style={{ margin: 0, color: "#888" }}>カードなし</p>
-              ) : (
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: "0.5rem",
-                  }}
-                >
-                  {playerHand.map((cardId) => (
-                    <span
-                      key={cardId}
-                      style={{
-                        padding: "0.4rem 0.6rem",
-                        borderRadius: 6,
-                        color: "#333",
-                        border: "1px solid #ccc",
-                        backgroundColor: "#fff",
-                        fontSize: "0.9rem",
-                      }}
-                    >
-                      <img
-                        src={getCardImageUrl(cardId)}
-                        alt={`カード ${cardId}`}
-                        style={{
-                          display: "block",
-                          width: "120px",
-                          height: "180px",
-                          objectFit: "cover",
-                        }}
-                      />
-                    </span>
-                  ))}
-                </div>
+      <section className="result-header">
+        <div className="result-header-main">🎉 結果発表 ✨</div>
+        <div className="result-header-sub">
+          人生において大切な5つの価値観
+        </div>
+      </section>
+
+      {/* ★ 自分の価値観（2 段固定レイアウト） */}
+      <section className="result-my-values">
+        <div className="result-my-panel">
+          <div className="result-my-title">
+            <strong>{myName}</strong> の価値観
+          </div>
+
+          {isNarrow ? (
+            // 2列（3 + 2）
+            <div className="result-my-card-rows">
+              <div className="result-my-card-row">
+                {mySlots.slice(0, 3).map((cardId, idx) =>
+                  renderSlot(cardId, `row1-${idx}`, "multi")
+                )}
+              </div>
+              <div className="result-my-card-row">
+                {mySlots.slice(3).map((cardId, idx) =>
+                  renderSlot(cardId, `row2-${idx}`, "multi")
+                )}
+              </div>
+            </div>
+          ) : (
+            // 1列5枚
+            <div className="result-my-card-row result-my-card-row--single">
+              {mySlots.map((cardId, idx) =>
+                renderSlot(cardId, `single-${idx}`, "single")
               )}
             </div>
-          );
-        })}
-      </div>
+          )}
+        </div>
+      </section>
+
+      {/* 他プレイヤーのセクションは今のままでOK */}
+      <section className="result-others">
+        <div className="result-section-title">ほかのプレイヤーの価値観</div>
+        <div className="result-others-scroll">
+          {otherPlayers.map((p) => {
+            const hand = (room.hands?.[p.id] ?? []).slice(0, 5);
+
+            return (
+              <div key={p.id} className="result-other-column">
+                <div className="result-other-header">
+                  <strong className="result-other-name">{p.name}</strong>
+                  <span className="result-other-header-suffix">
+                    の価値観
+                  </span>
+                </div>
+                <div className="result-other-values">
+                  {hand.length === 0 && (
+                    <div className="result-other-empty">
+                      まだカードがありません
+                    </div>
+                  )}
+                  {hand.map((cardId) => {
+                    const { jp, en } = getCardTexts(cardId);
+                    return (
+                      <div
+                        key={`${p.id}-${cardId}`}
+                        className="result-other-value"
+                      >
+                        <div className="result-other-jp">{jp}</div>
+                        {en && <div className="result-other-en">{en}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
     </div>
   );
 }

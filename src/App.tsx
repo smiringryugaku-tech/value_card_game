@@ -286,8 +286,14 @@ function App() {
     );
   }
 
-  else if (screen === "result" && room) {
-    content = <ResultPage room={room} players={players} />;
+  else if (screen === "result" && room && playerId) {
+    content = (
+      <ResultPage
+        room={room}
+        players={players}
+        myPlayerId={playerId}
+      />
+    );
   }
 
   // 万が一おかしな状態になったとき

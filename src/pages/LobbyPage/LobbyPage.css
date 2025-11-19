@@ -1,0 +1,317 @@
+/* src/pages/LobbyPage/LobbyPage.css */
+
+.lobby-root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 1.2rem 1.5rem 1rem;
+  box-sizing: border-box;
+  color: #333;
+  overflow-y: auto; /* ロビーだけ縦スクロールOK */
+}
+
+/* ===== 上部：アイコン + テキスト（ざっくり 30% イメージ） ===== */
+
+.lobby-header {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 1.2rem;
+}
+
+.lobby-icon {
+  font-size: clamp(3rem, 8vw, 4.5rem);
+  margin-bottom: 0.4rem;
+}
+
+.lobby-wait-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.lobby-wait-main {
+  font-size: clamp(1.4rem, 3vw, 1.8rem);
+  font-weight: bold;
+}
+
+.lobby-wait-count {
+  margin-top: 0.2rem;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.lobby-room-code {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #4b2a00
+}
+
+.lobby-room-code-row {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.invitation-copy-button {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
+  border-radius: 5px;
+  border: 1px solid #d0a963;
+  background-color: #fffaf0;
+  cursor: pointer;
+}
+
+.invitation-copy-button:hover {
+  background-color: #ffefcf;
+}
+
+.lobby-host-message {
+  margin-top: 0.7rem;
+  font-size: 0.97rem;
+  color: #7a4b00;
+}
+
+/* ===== プレイヤーリスト枠 ===== */
+
+.lobby-players-section {
+  flex: 0 0 auto;
+  margin-top: 0.8rem;
+  margin-bottom: 1.2rem;
+}
+
+.lobby-players-panel {
+  height: min(36vh, 320px); /* 画面の縦に依存する高さ、人数とは無関係 */
+  min-height: 180px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background-color: #fffaf0;
+  padding: 0.8rem 1rem;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  max-width: min(500px, 80vw);
+  margin-inline: auto;
+}
+
+/* ★ 1列モード（〜5人 or 狭い画面） */
+.lobby-players-panel--normal {
+  max-width: min(500px, 80vw);
+}
+
+/* ★ 2列モード（横幅広い & 6人以上） */
+.lobby-players-panel--wide {
+  max-width: min(720px, 80vw);
+}
+
+.lobby-players-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+/* ===== 2列モード（横幅広くて 6人以上） ===== */
+
+.lobby-players-columns {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.lobby-player-column {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly; /* 5つのスロットを等間隔で配置 */
+}
+
+/* 列の中の 1 スロット（高さ = 列の 1/5） */
+.lobby-player-slot {
+  flex: 0 0 18%; /* gap 分を考慮してちょっと小さめ */
+  display: flex;
+  align-items: center;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  font-size: 0.98rem;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.lobby-player-name {
+  display: block;
+  max-width: 14rem;
+  color: #4b2a00;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.2rem;
+  margin-left: 1.5rem;
+}
+
+/* ===== 1列モード（横幅が狭い or 5人以下） ===== */
+
+/* 1列モードの共通ラッパー */
+.lobby-players-single-wrapper {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+/* ケース B: 1〜5人 → 高さを5等分にしてきっちり配置 */
+.lobby-players-single-fixed {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly; /* 5スロットを等間隔配置 */
+}
+
+/* 固定5スロット内でも同じ見た目を使う */
+.lobby-players-single-fixed .lobby-player-slot {
+  width: 100%;
+}
+
+/* ケース C: 6人以上 → 縦スクロールリスト */
+.lobby-players-single-scroll-list {
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding-right: 0.25rem;
+}
+
+/* スクロールリスト内でも同じ slot 見た目でOK */
+.lobby-players-single-scroll-list .lobby-player-slot {
+  width: 100%;
+}
+
+
+/* ===== ホスト設定 ===== */
+
+.lobby-host-section {
+  flex: 0 0 auto;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background-color: #fffaf0;
+  padding: 0.9rem 1.1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  width: min(320px, 60vw);
+  margin-inline: auto;
+}
+
+.lobby-host-title {
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 0.2rem;
+}
+
+.lobby-cardcount-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.lobby-cardcount-label {
+  font-size: 0.95rem;
+}
+
+.lobby-cardcount-value {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+/* スライダー装飾 */
+
+.lobby-card-slider {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ffd27f, #ffa94d);
+  outline: none;
+  margin-top: 0.2rem;
+}
+
+/* つまみ */
+.lobby-card-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #e5a63a;
+  cursor: pointer;
+  box-shadow: 0 0 0 2px rgba(229, 166, 58, 0.2);
+}
+
+.lobby-card-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #e5a63a;
+  cursor: pointer;
+  box-shadow: 0 0 0 2px rgba(229, 166, 58, 0.2);
+}
+
+/* スライダーの最小値・最大値の目盛りテキスト */
+
+.lobby-card-slider-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #777;
+}
+
+/* ゲーム開始ボタン */
+
+.lobby-start-button {
+  margin-top: 0.5rem;
+  align-self: center;
+  padding: 0.55rem 1.6rem;
+  border-radius: 999px;
+  border: 1px solid #d08a2a;
+  background: linear-gradient(135deg, #ffd27f, #ffb74d);
+  color: #4b2a00;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+.lobby-start-button:hover {
+  background: linear-gradient(135deg, #ffce70, #ffae3a);
+}
+
+/* ===== スマホのとき少し詰める ===== */
+
+@media (max-width: 480px) {
+  .lobby-root {
+    padding-inline: 1rem;
+  }
+
+  .lobby-players-panel {
+    padding-inline: 0.75rem;
+  }
+
+  .lobby-player-slot {
+    font-size: 0.9rem;
+    padding-inline: 0.5rem;
+  }
+
+  .lobby-host-section {
+    padding-inline: 0.75rem;
+  }
+}

@@ -15,7 +15,7 @@ body {
 
 /* アプリ全体の枠 */
 .app-root {
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
 }

@@ -139,6 +139,7 @@
 .gb-discards-panel {
   flex: 1 1 auto;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
@@ -341,7 +342,7 @@
 }
 
 /* ===== 幅の狭い画面（スマホなど）は 3×2 の grid ＋左右に余白 ===== */
-@media (max-width: 720px) {
+@media (max-width: 650px) {
   /* 手札ゾーン全体は 40% くらいまで使う */
   .gb-hand-zone {
     flex: 0 0 40%;

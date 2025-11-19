@@ -1,0 +1,279 @@
+/* src/pages/ResultPage/ResultPage.css */
+
+.result-root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem 1.2rem 1rem;
+  box-sizing: border-box;
+  color: #333;
+}
+
+/* ===== 上 5〜8%：アクションボタン ===== */
+
+.result-actions-row {
+  flex: 0 0 8%;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem; /* ボタンと見出しの間に余白 */
+}
+
+.result-btn {
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 1rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.result-btn-primary {
+  background-color: #ffd27f;
+  border-color: #e5a63a;
+}
+
+.result-btn-primary:hover {
+  background-color: #ffca66;
+}
+
+.result-btn-secondary {
+  background-color: #ffffff;
+  border-color: #d0a963;
+}
+
+.result-btn-secondary:hover {
+  background-color: #fff6e5;
+}
+
+/* ===== 次の 10%：ヘッダー ===== */
+
+.result-header {
+  flex: 0 0 12%;
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin-bottom: 0.5rem; /* 下にも少し余白 */
+}
+
+.result-header-main {
+  font-size: clamp(1.6rem, 3.4vw, 2rem);
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.result-header-sub {
+  font-size: clamp(1.05rem, 2.2vw, 1.25rem);
+  color: #555;
+}
+
+/* ===== 自分の価値観（高さ 25〜30%） ===== */
+
+.result-my-values {
+  flex: 0 0 28%;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  padding-inline: 1rem;
+
+  margin-bottom: 2srem;
+}
+
+.result-my-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background-color: #fffaf0;
+  padding: 0.8rem 1rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* ★ 下のセクションにはみ出さない */
+}
+
+.result-my-title {
+  font-weight: 700;
+  margin-bottom: 0.6rem;
+  font-size: 1.05rem;
+}
+
+/* 2段レイアウト用のコンテナ */
+.result-my-card-rows {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+/* 1段/2段 共通の行 */
+.result-my-card-row {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+/* 実際のカードスロット */
+.result-my-card-slot {
+  flex: 0 0 auto;
+  /* 高さ基準でカードサイズを決める（2段でもパネル内に収まるように） */
+  height: 8.5vh;
+  max-height: 12vh;
+  aspect-ratio: 5 / 6;
+  width: auto;
+
+  border-radius: 10px;
+  overflow: hidden;
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* 空スロット */
+.result-my-card-slot--empty {
+  border-style: dashed;
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+.result-my-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 1列5枚用（横幅広いとき） */
+.result-my-card-row--single {
+  flex: 1 1 auto;
+  align-items: center;
+}
+
+.result-my-card-slot--single {
+  height: 15vh;
+  max-height: 15vh;
+}
+
+/* 画面が低いときは少し小さく */
+@media (max-height: 700px) {
+  .result-my-card-slot {
+    height: 7.5vh;
+    max-height: 8.5vh;
+  }
+}
+
+/* 画面が狭いとき（縦長スマホなど）は少し大きめにして見やすく */
+@media (max-width: 900px) {
+  .result-my-values {
+    flex: 0 0 30%;
+    padding-inline: 0.75rem;
+  }
+
+  .result-my-card-slot {
+    height: 9.5vh;
+    max-height: 11vh;
+  }
+}
+
+
+
+/* ===== 他のプレイヤー（少し低め / 文字は大きめ） ===== */
+
+.result-others {
+  flex: 0 0 35dvh;
+  min-height: 60px;
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.result-others .result-section-title {
+  font-size: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+/* プレイヤー列を横スクロール */
+
+.result-others-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  gap: 0.8rem;
+  overflow-x: auto;
+  padding-bottom: 0.3rem;
+}
+
+/* 各プレイヤーの枠（縦スクロール） */
+
+.result-other-column {
+  flex: 0 0 230px;
+  max-width: 270px;
+  min-height: 0;
+  border-radius: 12px;
+  background-color: #fdf7eb;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 0.6rem 0.6rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.result-other-header {
+  text-align: center;
+  margin-bottom: 0.35rem;
+}
+
+.result-other-name {
+  font-size: 1.05rem;
+}
+
+.result-other-header-suffix {
+  font-size: 0.9rem;
+  margin-left: 0.2rem;
+}
+
+/* 5 つの価値観リスト（縦スクロール） */
+
+.result-other-values {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.15rem 0.25rem;
+}
+
+.result-other-empty {
+  font-size: 0.9rem;
+  color: #888;
+}
+
+/* 各価値観（日本語 + 英語） */
+
+.result-other-value {
+  text-align: center;
+  padding: 0.3rem 0.5rem;
+  border-radius: 10px;
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  max-width: 100%;
+}
+
+.result-other-jp {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.result-other-en {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+/* 全体に少しだけ下余白を残す */
+.result-root {
+  padding-bottom: 1.1rem;
+}
