@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import "./App.css";
-import { TitlePage } from "./pages/TitlePage";
-import { RoomSetupPage } from "./pages/RoomSetupPage";
-import { LobbyPage } from "./pages/LobbyPage";
-import { GameBoardPage } from "./pages/GameBoardPage";
-import { ResultPage } from "./pages/ResultPage";
+import { TitlePage } from "./pages/TitlePage/TitlePage";
+import { RoomSetupPage } from "./pages/RoomSetupPage/RoomSetupPage";
+import { LobbyPage } from "./pages/LobbyPage/LobbyPage";
+import { GameBoardPage } from "./pages/GameBoardPage/GameBoardPage";
+import { ResultPage } from "./pages/ResultPage/ResultPage";
 import type { CardId, Mode, Player, Room, Screen } from "./types";
 import { getOrCreatePlayerId } from "./utils/playerId";
 import {
@@ -213,12 +213,15 @@ function App() {
     }
   }, [room?.activePlayerId, room?.turnPhase, room?.turnIndex, playerId]);
 
+  let content;
+  const isFixedLayout = screen === "game" || screen === "result";
+
   if (screen === "title") {
-    return <TitlePage onSubmit={handleTitleSubmit} />;
+    content = <TitlePage onSubmit={handleTitleSubmit} />;
   }
 
-  if (screen === "roomSetup" && mode) {
-    return (
+  else if (screen === "roomSetup" && mode) {
+    content = (
       <div>
         {errorMessage && (
           <div
@@ -243,8 +246,8 @@ function App() {
     );
   }
 
-  if (screen === "lobby" && room) {
-    return (
+  else if (screen === "lobby" && room) {
+    content = (
       <div>
         {errorMessage && (
           <div
@@ -270,8 +273,8 @@ function App() {
     );
   }
 
-  if (screen === "game" && room && playerId) {
-    return (
+  else if (screen === "game" && room && playerId) {
+    content = (
       <GameBoardPage
         room={room}
         players={players}
@@ -283,12 +286,32 @@ function App() {
     );
   }
 
-  if (screen === "result" && room) {
-    return <ResultPage room={room} players={players} />;
+  else if (screen === "result" && room) {
+    content = <ResultPage room={room} players={players} />;
   }
 
   // 万が一おかしな状態になったとき
-  return <div>エラー: 無効な画面状態です。</div>;
+  else { content = <div>エラー: 無効な画面状態です。</div>; }
+
+  return (
+    <div className="app-root">
+      <header className="app-bar">
+        <div style={{ fontSize: "min(32px, 4vh, 5vw)", fontWeight: "bold" }}>❤️‍🔥 価値観カードゲーム</div>
+        {playerName && (
+          <div style={{ fontSize: "1rem", fontWeight: "bold", opacity: 0.8}}>
+            👤 {playerName}
+          </div>
+        )}
+      </header>
+      <main className="app-main"
+        style={{
+          overflowY: isFixedLayout ? "hidden" : "auto",
+        }}
+      >
+        {content}
+      </main>
+    </div>
+  );
 }
 
 export default App;

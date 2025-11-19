@@ -1,5 +1,5 @@
 // src/pages/LobbyPage.tsx
-import type { Player } from "../types";
+import type { Player } from "../../types";
 import type { ChangeEvent } from "react";
 
 type LobbyPageProps = {

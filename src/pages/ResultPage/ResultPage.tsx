@@ -1,6 +1,6 @@
 // src/pages/ResultPage.tsx
-import type { Player, Room } from "../types";
-import {getCardImageUrl} from "../utils/cardImage";
+import type { Player, Room } from "../../types";
+import {getCardImageUrl} from "../../utils/cardImage";
 
 type ResultPageProps = {
   room: Room;

@@ -2,10 +2,10 @@ import type { CardId } from "../types";
 
 export function createShuffledDeck(cardCount: number): CardId[] {
   const deck: CardId[] = [];
-  for (let i = 0; i < cardCount; i++) {
+  for (let i = 0; i < 94; i++) {
     deck.push(i);
   }
-  return shuffle(deck);
+  return shuffle(deck).slice(0, cardCount);
 }
 
 export function shuffle<T>(array: T[]): T[] {

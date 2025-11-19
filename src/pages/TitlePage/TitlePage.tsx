@@ -1,6 +1,6 @@
 // src/pages/TitlePage.tsx
 import { type FormEvent, useState } from "react";
-import type { Mode } from "../types";
+import type { Mode } from "../../types";
 
 type TitlePageProps = {
   onSubmit: (name: string, mode: Mode) => void;

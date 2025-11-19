@@ -1,6 +1,6 @@
 // src/pages/RoomSetupPage.tsx
 import { type FormEvent } from "react";
-import type { Mode } from "../types";
+import type { Mode } from "../../types";
 
 type RoomSetupPageProps = {
   mode: Mode;

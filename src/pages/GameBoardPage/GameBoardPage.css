@@ -1,0 +1,369 @@
+/* src/pages/GameBoardPage/GameBoardPage.css */
+
+.game-board-root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  color: #333;
+}
+
+/* ===== ヘッダーゾーン（10%） ===== */
+
+.gb-header {
+  flex: 0 0 10%;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+}
+
+.gb-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 0.75rem;
+}
+
+.gb-header-title {
+  flex: 1;
+  text-align: center;
+  font-weight: 600;
+  font-size: clamp(1.5rem, 2.8vw, 1.8rem);
+}
+
+.gb-header-label {
+  margin: 0 0.1rem;
+}
+
+.gb-header-player-name {
+  font-weight: 700;
+}
+
+.gb-skip-button {
+  flex-shrink: 0;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  border: 1px solid #d0a963;
+  background-color: #ffe9b8;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.gb-skip-button:hover {
+  background-color: #ffdd91;
+}
+
+/* ===== 山札 + 捨て札ゾーン ===== */
+
+.gb-top-zone {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0 0.5rem;
+}
+
+.gb-top-inner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  /* 横幅の左右余白 */
+  margin: 0 4%;
+}
+
+/* PCサイズでは横並びに変更 */
+@media (min-width: 720px) {
+  .gb-top-inner {
+    flex-direction: row;
+    align-items: stretch;
+    margin-left: 5%;
+    margin-right: 5%;
+  }
+}
+
+/* 山札パネル */
+
+.gb-deck-panel {
+  flex: 0 0 auto;
+  padding: 0.75rem;
+  border-radius: 10px;
+  background-color: #fffaf0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+@media (min-width: 768px) {
+  .gb-deck-panel {
+    flex: 0 0 20%; /* 左から 20% エリアイメージ */
+  }
+}
+
+.gb-deck-title {
+  font-weight: 600;
+  margin-bottom: 0.1rem;
+}
+
+.gb-deck-count {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.gb-deck-button {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  border: 1px solid #3a7bd5;
+  background-color: #4f9dff;
+  color: white;
+  cursor: pointer;
+}
+
+.gb-deck-button:disabled {
+  background-color: #c8d8f0;
+  border-color: #a8b8d0;
+  cursor: default;
+}
+
+.gb-deck-helper {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+/* 捨て札ゾーン */
+
+.gb-discards-panel {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.gb-discards-header {
+  font-weight: 600;
+  margin-left: 0.2rem;
+}
+
+.gb-discards-row {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  gap: 0.75rem;
+  padding-bottom: 0.25rem;
+  overflow-x: auto;
+}
+
+/* プレイヤーごとの捨て札カラム */
+
+.gb-discard-column {
+  min-width: 180px;
+  max-width: 260px;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  background-color: #fdfaf5;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.gb-discard-column--active {
+  border-color: #f2b55f;
+  box-shadow: 0 0 0 2px rgba(242, 181, 95, 0.25);
+}
+
+.gb-discard-player-name {
+  font-weight: 600;
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.gb-discard-badge {
+  font-size: 0.7rem;
+  color: #b15c00;
+  background-color: #ffe3b8;
+  padding: 0.05rem 0.3rem;
+  border-radius: 999px;
+}
+
+.gb-discard-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.25rem;
+  border-radius: 6px;
+  background-color: #ffffff;
+}
+
+.gb-discard-empty {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+/* 捨て札カードのボタン（日本語＋英語） */
+
+.gb-discard-card {
+  width: 100%;
+  text-align: left;
+  padding: 0.3rem 0.4rem;
+  margin-bottom: 0.3rem;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  background-color: #ffffff;
+  cursor: pointer;
+}
+
+.gb-discard-card:disabled {
+  cursor: default;
+  background-color: #f7f7f7;
+  color: #aaa;
+}
+
+.gb-discard-card-jp {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.gb-discard-card-en {
+  font-size: 0.75rem;
+  color: #555;
+}
+
+/* ===== インストラクションゾーン（3%） ===== */
+
+.gb-instruction-zone {
+  flex: 0 0 3%;
+  min-height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gb-instruction-text {
+  font-size: 1.2rem;
+  color: #0070c9;
+}
+
+.gb-instruction-placeholder {
+  height: 1.2rem;
+}
+
+/* ===== 手札ゾーン（25% 上限イメージ） ===== */
+
+.gb-hand-zone {
+  flex: 0 0 25%;
+  min-height: 120px;
+  padding: 0.5rem 1rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.gb-hand-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.gb-hand-turn-indicator {
+  font-size: 0.8rem;
+  color: #b15c00;
+  background-color: #ffe3b8;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+}
+
+.gb-hand-cards-row {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ★ PC / 広い画面：1 段に 6 枚並べる */
+.gb-hand-card-slot {
+  flex: 0 0 auto;
+  /* 
+     横幅 = 
+       1) 横方向で 6 枚ならべた時の 1 枚分
+       2) 「高さ 20vh ×（5/6）」から決まる横幅
+     の小さい方
+  */
+  width: min(
+    calc((100% - 5 * 0.5rem) / 6),
+    calc(20vh * 5 / 6)
+  );
+  aspect-ratio: 5 / 6;   /* ここで常に 5:6 を保証 */
+  border-radius: 10px;
+}
+
+/* 中身がないスロット（枠だけ表示） */
+.gb-hand-card-slot--empty {
+  border: 1px dashed rgba(0, 0, 0, 0.15);
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+/* カードの実体（中身のボタン） */
+.gb-hand-card-button {
+  width: 100%;
+  height: 100%;
+  border: 1px solid #d0a963;
+  background-color: #fffaf0;
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.gb-hand-card-button:disabled {
+  background-color: #f0efe9;
+  border-color: #ccc;
+  cursor: default;
+}
+
+.gb-hand-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ===== 幅の狭い画面（スマホなど）は 3×2 の grid ＋左右に余白 ===== */
+@media (max-width: 720px) {
+  /* 手札ゾーン全体は 40% くらいまで使う */
+  .gb-hand-zone {
+    flex: 0 0 40%;
+    padding-inline: 0.5rem;
+  }
+
+  /* flex → grid に切り替え */
+  .gb-hand-cards-row {
+    display: grid;
+    grid-template-columns: repeat(3, auto);
+    justify-content: center;
+    column-gap: 0.4rem;
+    row-gap: 0.4rem;
+    align-content: center;
+  }
+
+  .gb-hand-card-slot {
+    width: min(
+      22vw,
+      calc(18vh * 5 / 6)
+    );
+    aspect-ratio: 5 / 6;
+    border-radius: 10px;
+  }
+}
