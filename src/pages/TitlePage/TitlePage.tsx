@@ -1,5 +1,5 @@
 // src/pages/TitlePage/TitlePage.tsx
-import { useState } from "react";
+import { useState, useRef } from "react";
 import type { Mode } from "../../types";
 import "./TitlePage.css";
 
@@ -17,6 +17,17 @@ export function TitlePage({ onSubmit }: TitlePageProps) {
   };
 
   const disabled = playerName.trim().length === 0;
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleFocus = () => {
+    // キーボードが出たあとにスクロールさせたいので、少しだけ遅らせる
+    setTimeout(() => {
+      inputRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 200);
+  };
 
   return (
     <div className="title-root">
@@ -25,7 +36,7 @@ export function TitlePage({ onSubmit }: TitlePageProps) {
         <div className="title-logo-wrapper">
           <img
             src="/images/smiring_logo.png"
-            alt="ゲームロゴ"
+            alt="SmiRing ロゴ"
             className="title-logo-img"
           />
         </div>
@@ -45,6 +56,7 @@ export function TitlePage({ onSubmit }: TitlePageProps) {
               className="title-name-input"
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
+              onFocus={handleFocus}
               placeholder="例: たろう / Taro"
               maxLength={10}
             />

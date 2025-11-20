@@ -1,5 +1,6 @@
 // src/pages/LobbyPage/LobbyPage.tsx
 import { useEffect, useState } from "react";
+import { IoCopyOutline } from "react-icons/io5";
 import "./LobbyPage.css";
 import type { Player } from "../../types";
 
@@ -82,7 +83,7 @@ export function LobbyPage({
               className="invitation-copy-button"
               onClick={handleCopyInvite}
             >
-              📑
+              <IoCopyOutline size={15}/>
             </button>
           </div>
         </div>

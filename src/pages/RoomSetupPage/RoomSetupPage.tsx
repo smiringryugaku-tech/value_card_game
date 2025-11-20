@@ -1,5 +1,5 @@
 // src/pages/RoomSetupPage/RoomSetupPage.tsx
-import type { FormEvent } from "react";
+import { type FormEvent, useRef } from "react";
 import type { Mode } from "../../types";
 import "./RoomSetupPage.css";
 
@@ -33,6 +33,17 @@ export function RoomSetupPage({
     mode === "create"
       ? "使用したいルームコードを決めてください。（10文字以下）"
       : "参加したいルームコードを入力してください。";
+
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const handleFocus = () => {
+    // キーボードが出たあとにスクロールさせたいので、少しだけ遅らせる
+    setTimeout(() => {
+      inputRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 200);
+  };
 
   return (
     <div className="room-setup-root">
@@ -72,6 +83,7 @@ export function RoomSetupPage({
                 className="room-setup-input"
                 placeholder="例: ABCD"
                 maxLength={10}
+                onFocus={handleFocus}
               />
             </label>
 
