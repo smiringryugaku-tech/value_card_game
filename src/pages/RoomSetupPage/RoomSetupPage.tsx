@@ -31,7 +31,7 @@ export function RoomSetupPage({
 
   const description =
     mode === "create"
-      ? "使用したいルームコードを決めてください。"
+      ? "使用したいルームコードを決めてください。（10文字以下）"
       : "参加したいルームコードを入力してください。";
 
   return (
@@ -43,7 +43,7 @@ export function RoomSetupPage({
           className="room-setup-back-button"
           onClick={onBack}
         >
-          ◀️ 戻る
+          ◀ 戻る
         </button>
       </div>
 
@@ -71,7 +71,7 @@ export function RoomSetupPage({
                 }
                 className="room-setup-input"
                 placeholder="例: ABCD"
-                maxLength={8}
+                maxLength={10}
               />
             </label>
 

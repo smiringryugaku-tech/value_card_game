@@ -8,6 +8,7 @@ type ResultPageProps = {
   room: Room;
   players: Player[];
   myPlayerId: string;
+  onPlayAgain: () => void; 
 };
 
 function getCardTexts(cardId: CardId) {
@@ -16,7 +17,7 @@ function getCardTexts(cardId: CardId) {
   return { jp: info.japanese, en: info.english };
 }
 
-export function ResultPage({ room, players, myPlayerId }: ResultPageProps) {
+export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPageProps) {
   const [isNarrow, setIsNarrow] = useState(false);
 
   useEffect(() => {
@@ -33,10 +34,6 @@ export function ResultPage({ room, players, myPlayerId }: ResultPageProps) {
   const myName = myPlayer?.name ?? "あなた";
 
   const otherPlayers = players.filter((p) => p.id !== myPlayerId);
-
-  const handlePlayAgain = () => {
-    alert("もう一度遊ぶ（あとで実装するよ！）");
-  };
 
   const handleAnalyze = () => {
     alert("AI分析（あとで実装するよ！）");
@@ -81,7 +78,7 @@ export function ResultPage({ room, players, myPlayerId }: ResultPageProps) {
         <button
           type="button"
           className="result-btn result-btn-primary"
-          onClick={handlePlayAgain}
+          onClick={onPlayAgain}
         >
           もう一度遊ぶ
         </button>
@@ -135,7 +132,7 @@ export function ResultPage({ room, players, myPlayerId }: ResultPageProps) {
 
       {/* 他プレイヤーのセクションは今のままでOK */}
       <section className="result-others">
-        <div className="result-section-title">ほかのプレイヤーの価値観</div>
+        <div className="result-section-title">他のプレイヤーの価値観</div>
         <div className="result-others-scroll">
           {otherPlayers.map((p) => {
             const hand = (room.hands?.[p.id] ?? []).slice(0, 5);

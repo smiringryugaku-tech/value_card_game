@@ -162,8 +162,51 @@ function App() {
       alert((err as Error).message);
     }
   };
-  
 
+  const handleSkipPlayer = async () => {
+    // 基本的なガード
+    if (!room) return;
+    if (!room.activePlayerId) return;
+    if (!isHost) return;                   // 念のためホストだけ
+    if (playerId && room.hostId !== playerId) return;
+  
+    // プレイヤー順序は players の並びを前提
+    const order = players.map((p) => p.id);
+    const currentIndex = order.indexOf(room.activePlayerId);
+    if (currentIndex === -1) return;
+  
+    const nextIndex = (currentIndex + 1) % order.length;
+    const nextPlayerId = order[nextIndex];
+  
+    try {
+      const ref = doc(db, "rooms", room.code);
+      await updateDoc(ref, {
+        activePlayerId: nextPlayerId,
+        turnPhase: "draw",                 // 次の人は draw からスタート
+        turnIndex: (room.turnIndex ?? 0) + 1, // もし turnIndex があればインクリメント
+      });
+    } catch (err) {
+      console.error("プレイヤースキップの更新に失敗:", err);
+      alert("プレイヤーのスキップに失敗しました。もう一度試してください。");
+    }
+  };
+
+  const handlePlayAgainFromResult = () => {
+    // ルームから一旦抜けた扱いにする
+    setIsInRoom(false);
+    setRoom(null);
+    setPlayers([]);
+  
+    // ルームコードはリセット（同じコードを使いたいなら残してもOK）
+    setRoomCode("");
+  
+    // エラーもリセットしておく
+    setErrorMessage(null);
+  
+    // ルームセットアップ画面へ
+    setScreen("title");
+  };
+  
   useEffect(() => {
     if (!roomCode || !isInRoom) return;
   
@@ -267,7 +310,6 @@ function App() {
           cardCount={cardCount}
           onCardCountChange={handleCardCountChange}
           onStartGame={handleStartGame}
-          // isStartingGame を渡したい場合は props に足す
         />
       </div>
     );
@@ -282,6 +324,7 @@ function App() {
         onDrawFromDeck={handleDrawFromDeck}
         onDrawFromDiscard={handleDrawFromDiscard}
         onDiscard={handleDiscardCard}
+        onSkipPlayer={handleSkipPlayer}
       />
     );
   }
@@ -292,6 +335,7 @@ function App() {
         room={room}
         players={players}
         myPlayerId={playerId}
+        onPlayAgain={handlePlayAgainFromResult}
       />
     );
   }

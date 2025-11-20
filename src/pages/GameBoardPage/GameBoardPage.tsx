@@ -11,6 +11,7 @@ type GameBoardPageProps = {
   onDrawFromDeck: () => void;
   onDrawFromDiscard: (fromPlayerId: string, cardIndex: number) => void;
   onDiscard: (cardId: CardId) => void;
+  onSkipPlayer: () => void;
 };
 
 function getCardTexts(cardId: CardId) {
@@ -26,6 +27,7 @@ export function GameBoardPage({
   onDrawFromDeck,
   onDrawFromDiscard,
   onDiscard,
+  onSkipPlayer,
 }: GameBoardPageProps) {
   const myHand = room.hands?.[myPlayerId] ?? [];
   const discards = room.discards ?? {};
@@ -51,8 +53,8 @@ export function GameBoardPage({
   }
 
   const handleSkipPlayer = () => {
-    // ここはロジックが決まったら親から prop でもらう形にして良いと思う
-    alert("プレイヤーをスキップする機能は、これから実装します！");
+    if (!activePlayerId) return;
+    onSkipPlayer();
   };
 
   return (
@@ -60,6 +62,17 @@ export function GameBoardPage({
       {/* ヘッダーゾーン（高さ10%想定） */}
       <div className="gb-header">
         <div className="gb-header-inner">
+        {isHost && (
+          <button
+            type="button"
+            className="gb-skip-button gb-skip-button--ghost"
+            aria-hidden="true"
+            tabIndex={-1}
+          >
+            <span className="gb-skip-icon">⏩️</span>
+            <span className="gb-skip-label">プレイヤーをスキップ</span>
+          </button>
+        )}
           <div className="gb-header-title">
             {activePlayer ? (
               <>
@@ -81,7 +94,8 @@ export function GameBoardPage({
               className="gb-skip-button"
               onClick={handleSkipPlayer}
             >
-              ⏩️ プレイヤーをスキップ
+              <span className="gb-skip-icon">⏩️</span>
+              <span className="gb-skip-label">プレイヤーをスキップ</span>
             </button>
           )}
         </div>
@@ -100,28 +114,38 @@ export function GameBoardPage({
       <div className="gb-top-zone">
         <div className="gb-top-inner">
           {/* 山札パネル */}
-          <section className="gb-deck-panel">
-            <div className="gb-deck-title">山札</div>
-            <div className="gb-deck-count">残り {deckCount} 枚</div>
-            <button
-              type="button"
-              className="gb-deck-button"
-              onClick={onDrawFromDeck}
-              disabled={!canDraw || deckCount === 0}
-            >
-              山札から 1 枚引く
-            </button>
-            {!isMyTurn && (
-              <div className="gb-deck-helper">
-                自分のターンになるまで待ってね
-              </div>
-            )}
-            {isMyTurn && phase === "discard" && (
-              <div className="gb-deck-helper">
-                すでにカードを引いたよ。手札から 1 枚捨てよう。
-              </div>
-            )}
-          </section>
+            <section className="gb-deck-panel">
+            <div className="gb-deck-labels">
+              <div className="gb-deck-title">山札</div>
+              <div className="gb-deck-count">残り {deckCount} 枚</div>
+            </div>
+
+              {/* ★ 画像ボタン版の山札 */}
+              <button
+                type="button"
+                className={
+                  "gb-deck-image-wrapper" +
+                  (canDraw && deckCount > 0 ? " gb-deck-image-wrapper--active" : "")
+                }
+                onClick={onDrawFromDeck}
+                disabled={!canDraw || deckCount === 0}
+              >
+                <img
+                  src="/images/deck.png"          // ★ 山札画像（好きなパスに変えてOK）
+                  alt="山札"
+                  className="gb-deck-image"
+                />
+                {/* ホバー時に出る白エフェクト＋手アイコン */}
+                <div className="gb-deck-image-overlay">
+                  <div className="gb-deck-overlay-label">一枚引く</div>
+                  <img
+                    src="/images/hand-pick-yellow.png"   // ★ 手のアイコン画像
+                    alt=""
+                    className="gb-deck-hand-icon"
+                  />
+                </div>
+              </button>
+            </section>
 
           {/* 捨て札ゾーン */}
           <section className="gb-discards-panel">
@@ -153,17 +177,20 @@ export function GameBoardPage({
                         </div>
                       )}
 
-                      {playerDiscards.map((cardId, index) => {
+                      {[...playerDiscards]
+                          .map((cardId, index) => ({ cardId, originalIndex: index }))
+                          .reverse()
+                          .map(({ cardId, originalIndex }) => {
                         const { jp, en } = getCardTexts(cardId);
                         const canPick = canDraw && playerDiscards.length > 0;
 
                         return (
                           <button
-                            key={`${cardId}-${index}`}
+                            key={`${cardId}-${originalIndex}`}
                             type="button"
                             className="gb-discard-card"
                             onClick={() =>
-                              onDrawFromDiscard(p.id, index)
+                              onDrawFromDiscard(p.id, originalIndex)
                             }
                             disabled={!canPick}
                           >
@@ -214,7 +241,10 @@ export function GameBoardPage({
             <div key={slotKey} className="gb-hand-card-slot">
               <button
                 type="button"
-                className="gb-hand-card-button"
+                className={
+                  "gb-hand-card-button" +
+                  (canDiscard ? " gb-hand-card-button--discardable" : "")
+                }
                 onClick={() => onDiscard(cardId)}
                 disabled={!canDiscard}
               >
@@ -223,6 +253,16 @@ export function GameBoardPage({
                   alt={`カード ${cardId}`}
                   className="gb-hand-card-image"
                 />
+                {/* 捨てフェーズのときだけ赤エフェクト＋ゴミ箱を重ねる */}
+                {canDiscard && (
+                  <div className="gb-hand-card-overlay">
+                    <img
+                      src="/images/trash.png"
+                      alt=""
+                      className="gb-hand-card-trash-icon"
+                    />
+                  </div>
+                )}
               </button>
             </div>
           );

@@ -1,4 +1,7 @@
-html,
+html {
+  font-size: 16px;
+}
+
 body,
 #root {
   height: 100%;
@@ -10,4 +13,17 @@ body {
   background-color: #fff4d1;
   color: #10181c;
   overflow: hidden;
+}
+
+@media (max-width: 720px) {
+  html {
+    font-size: 15px; /* 全体をほんの少し小さく */
+  }
+}
+
+/* かなり小さいスマホ */
+@media (max-width: 480px) {
+  html {
+    font-size: 14px; /* さらにちょっとだけ小さく */
+  }
 }

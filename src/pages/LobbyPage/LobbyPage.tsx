@@ -21,6 +21,7 @@ export function LobbyPage({
   onStartGame,
 }: LobbyPageProps) {
   const [isNarrow, setIsNarrow] = useState(false);
+  const [copyToast, setCopyToast] = useState<string | null>(null);
 
   useEffect(() => {
     const update = () => {
@@ -41,10 +42,12 @@ export function LobbyPage({
   
     try {
       await navigator.clipboard.writeText(inviteUrl);
-      alert("招待リンクをコピーしました！");
+      setCopyToast("招待リンクをコピーしました！");
+      setTimeout(() => setCopyToast(null), 2000); // 2秒で消す
     } catch (err) {
       console.error("クリップボードコピーに失敗:", err);
-      alert("コピーに失敗しました。手動で選択してコピーしてください。");
+      setCopyToast("コピーに失敗しました。手動でコピーしてください。");
+      setTimeout(() => setCopyToast(null), 3000);
     }
   };
 
@@ -91,6 +94,11 @@ export function LobbyPage({
             <>ホストがゲームを開始するまでお待ちください。</>
           )}
         </div>
+        {copyToast && (
+          <div className="lobby-copy-toast">
+            {copyToast}
+          </div>
+        )}
       </section>
 
       {/* ===== プレイヤーリスト（高さは画面依存、中身の表示だけ変える） ===== */}
@@ -176,8 +184,8 @@ export function LobbyPage({
           <input
             type="range"
             min={20}
-            max={90}
-            step={5}
+            max={94}
+            step={1}
             value={cardCount}
             onChange={handleSliderChange}
             className="lobby-card-slider"
@@ -185,7 +193,7 @@ export function LobbyPage({
 
           <div className="lobby-card-slider-scale">
             <span>20</span>
-            <span>90</span>
+            <span>94</span>
           </div>
 
           <button

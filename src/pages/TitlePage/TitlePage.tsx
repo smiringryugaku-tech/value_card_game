@@ -24,7 +24,7 @@ export function TitlePage({ onSubmit }: TitlePageProps) {
         {/* ロゴ */}
         <div className="title-logo-wrapper">
           <img
-            src="/images/logo.png"
+            src="/images/smiring_logo.png"
             alt="ゲームロゴ"
             className="title-logo-img"
           />
@@ -39,13 +39,14 @@ export function TitlePage({ onSubmit }: TitlePageProps) {
         {/* 中央付近：プレイヤー名入力 + モード選択ボタン */}
         <div className="title-form-block">
           <label className="title-name-label">
-            <span className="title-name-caption">プレイヤー名を入力</span>
+            <span className="title-name-caption">プレイヤー名を入力（10文字以下）</span>
             <input
               type="text"
               className="title-name-input"
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
               placeholder="例: たろう / Taro"
+              maxLength={10}
             />
           </label>
 
