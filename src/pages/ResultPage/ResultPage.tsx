@@ -45,6 +45,7 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
   );
 
   type SlotVariant = "single" | "multi";
+
   const renderSlot = (cardId: CardId | null, key: string, variant: SlotVariant) => {
     const baseClass = [
       "result-my-card-slot",
@@ -66,6 +67,33 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
           src={getCardImageUrl(cardId)}
           alt={jp || `カード ${cardId}`}
           className="result-my-card-image"
+        />
+      </div>
+    );
+  };
+
+  // ★ 他プレイヤー用のカードスロット描画（少し小さめ）
+  const renderOtherSlot = (cardId: CardId | null, key: string, variant: SlotVariant) => {
+    const baseClass = [
+      "result-other-card-slot",
+      variant === "single" ? "result-other-card-slot--single": "",
+      cardId == null ? "result-other-card-slot--empty" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    if (cardId == null) {
+      return <div key={key} className={baseClass} />;
+    }
+
+    const { jp } = getCardTexts(cardId);
+
+    return (
+      <div key={key} className={baseClass}>
+        <img
+          src={getCardImageUrl(cardId)}
+          alt={jp || `カード ${cardId}`}
+          className="result-other-card-image"
         />
       </div>
     );
@@ -130,12 +158,16 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
         </div>
       </section>
 
-      {/* 他プレイヤーのセクションは今のままでOK */}
+      {/* ★ 他プレイヤーもカードで表示 */}
       <section className="result-others">
         <div className="result-section-title">他のプレイヤーの価値観</div>
         <div className="result-others-scroll">
           {otherPlayers.map((p) => {
             const hand = (room.hands?.[p.id] ?? []).slice(0, 5);
+            const slots: Array<CardId | null> = Array.from(
+              { length: 5 },
+              (_, i) => hand[i] ?? null
+            );
 
             return (
               <div key={p.id} className="result-other-column">
@@ -145,30 +177,35 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
                     の価値観
                   </span>
                 </div>
-                <div className="result-other-values">
-                  {hand.length === 0 && (
-                    <div className="result-other-empty">
-                      まだカードがありません
+
+                <div className="result-other-cards">
+                  {isNarrow ? (
+                    <>
+                      <div className="result-other-card-row">
+                        {slots.slice(0, 3).map((cardId, idx) =>
+                          renderOtherSlot(cardId, `${p.id}-row1-${idx}`, "multi")
+                        )}
+                      </div>
+                      <div className="result-other-card-row">
+                        {slots.slice(3).map((cardId, idx) =>
+                          renderOtherSlot(cardId, `${p.id}-row2-${idx}`, "multi")
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="result-other-card-row result-other-card-row--single">
+                      {slots.map((cardId, idx) =>
+                        renderOtherSlot(cardId, `${p.id}-single-${idx}`, "single")
+                      )}
                     </div>
                   )}
-                  {hand.map((cardId) => {
-                    const { jp, en } = getCardTexts(cardId);
-                    return (
-                      <div
-                        key={`${p.id}-${cardId}`}
-                        className="result-other-value"
-                      >
-                        <div className="result-other-jp">{jp}</div>
-                        {en && <div className="result-other-en">{en}</div>}
-                      </div>
-                    );
-                  })}
                 </div>
               </div>
             );
           })}
         </div>
       </section>
+      <div className="bottom-spacer"/>
     </div>
   );
 }

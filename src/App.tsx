@@ -257,7 +257,7 @@ function App() {
   }, [room?.activePlayerId, room?.turnPhase, room?.turnIndex, playerId]);
 
   let content;
-  const isFixedLayout = screen === "game" || screen === "result";
+  const isFixedLayout = screen === "game";
 
   if (screen === "title") {
     content = <TitlePage onSubmit={handleTitleSubmit} />;
