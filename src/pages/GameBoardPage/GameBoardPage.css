@@ -26,7 +26,7 @@
 }
 
 .gb-header-title {
-  flex: 1;
+  flex: 0 0 auto;
   text-align: center;
   font-weight: 600;
   font-size: clamp(1.5rem, 2.8vw, 1.8rem);
@@ -38,6 +38,50 @@
 
 .gb-header-player-name {
   font-weight: 700;
+}
+
+.gb-header-timer-container,
+.gb-header-skip-button-container {
+  flex: 1 1 0;
+  display: flex;
+}
+
+.gb-header-timer-container {
+  justify-content: flex-start;
+}
+
+.gb-header-time--danger {
+  color: rgb(227, 159, 0);
+}
+
+.gb-header-time--over {
+  color: rgb(200, 0, 0);
+}
+
+.gb-header-skip-button-container {
+  justify-content: flex-end;
+}
+
+.gb-timer-button {
+  flex-shrink: 0;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  border: 1px solid #d0a963;
+  background-color: #ffe9b8;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.gb-timer-button:hover {
+  background-color: #ffdd91;
+}
+
+.gb-timer-icon {
+  font-size: 1rem;
 }
 
 .gb-skip-button {
@@ -54,11 +98,6 @@
   gap: 0.25rem;
 }
 
-.gb-skip-button--ghost {
-  visibility: hidden;
-  pointer-events: none;
-}
-
 .gb-skip-button:hover {
   background-color: #ffdd91;
 }
@@ -72,11 +111,23 @@
     display: none;
   }
 
+  .gb-timer-label {
+    display: none;
+  }
+
   .gb-skip-button {
-    padding: (0.4rem, 0.2rem);
+    padding: 0.4rem 0.2rem;
+  }
+
+  .gb-timer-button {
+    padding: 0.4rem 0.2rem;
   }
 
   .gb-skip-icon {
+    font-size: 2rem;
+  }
+
+  .gb-timer-icon {
     font-size: 2rem;
   }
 }
@@ -537,4 +588,75 @@
     aspect-ratio: 5 / 6;
     border-radius: 10px;
   }
+}
+
+
+.gb-timer-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100; /* 他より前に出す */
+}
+
+.gb-timer-dialog {
+  background-color: #fffaf0;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  padding: 1rem 1.25rem 1.1rem;
+  width: min(320px, 90vw);
+  box-sizing: border-box;
+}
+
+.gb-timer-dialog-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.gb-timer-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.gb-timer-seconds-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.gb-timer-seconds-input {
+  width: 5rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.gb-timer-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.gb-timer-dialog-actions button {
+  padding: 0.35rem 0.8rem;
+  border-radius: 6px;
+  border: 1px solid #d0a963;
+  background-color: #ffe9b8;
+  cursor: pointer;
+}
+
+.gb-timer-dialog-actions button:last-child {
+  background-color: #ffd27f;
+}
+
+.gb-timer-dialog-actions button:hover {
+  filter: brightness(1.03);
 }

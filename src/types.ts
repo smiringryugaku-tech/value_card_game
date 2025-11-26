@@ -40,6 +40,7 @@ export type Room = {
     activePlayerId?: string;
     turnIndex?: number;
     turnPhase?: TurnPhase;
+    turnTimerSeconds?: number | null;
 
     startedAt?: any;
     updatedAt?: any;

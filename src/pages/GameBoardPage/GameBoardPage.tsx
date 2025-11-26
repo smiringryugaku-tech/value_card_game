@@ -1,5 +1,6 @@
 // src/pages/GameBoardPage/GameBoardPage.tsx
 import type { CardId, Player, Room } from "../../types";
+import { useEffect, useState } from "react";
 import "./GameBoardPage.css";
 // パスはあなたのプロジェクトに合わせて変えてね
 import { cardDict, getCardImageUrl } from "../../utils/cardImage";
@@ -12,6 +13,7 @@ type GameBoardPageProps = {
   onDrawFromDiscard: (fromPlayerId: string, cardIndex: number) => void;
   onDiscard: (cardId: CardId) => void;
   onSkipPlayer: () => void;
+  onTimerSetting: (seconds: number | null)=> void;
 };
 
 function getCardTexts(cardId: CardId) {
@@ -28,6 +30,7 @@ export function GameBoardPage({
   onDrawFromDiscard,
   onDiscard,
   onSkipPlayer,
+  onTimerSetting,
 }: GameBoardPageProps) {
   const myHand = room.hands?.[myPlayerId] ?? [];
   const discards = room.discards ?? {};
@@ -38,9 +41,24 @@ export function GameBoardPage({
   const isMyTurn = activePlayerId === myPlayerId;
   const phase = room.turnPhase ?? "draw";
   const isHost = room.hostId === myPlayerId;
+  const turnTimerSeconds = room.turnTimerSeconds ?? null;
 
   const canDraw = isMyTurn && phase === "draw";
   const canDiscard = isMyTurn && phase === "discard";
+
+  const [isTimerDialogOpen, setIsTimerDialogOpen] = useState(false);
+  const [timerOn, setTimerOn] = useState<boolean>(!!room.turnTimerSeconds);
+  const [timerSecondsInput, setTimerSecondsInput] = useState<string>(
+    room.turnTimerSeconds != null ? String(room.turnTimerSeconds) : "30"
+  );
+
+  useEffect(() => {
+    setTimerOn(!!room.turnTimerSeconds);
+    setTimerSecondsInput(
+      room.turnTimerSeconds != null ? String(room.turnTimerSeconds) : "30"
+    );
+  }, [room.turnTimerSeconds]);
+
 
   // インストラクションテキスト
   let instruction: string | null = null;
@@ -57,22 +75,67 @@ export function GameBoardPage({
     onSkipPlayer();
   };
 
+  const openTimerDialog = () => {
+    if (!isHost) return;
+    setIsTimerDialogOpen(true);
+  };
+
+  const closeTimerDialog = () => {
+    setIsTimerDialogOpen(false);
+  };
+
+  const handleTimerSave = () => {
+    if (!timerOn) {
+      onTimerSetting(null); // タイマー無し
+    } else {
+      const sec = Number(timerSecondsInput);
+      const safeSec = Number.isFinite(sec) && sec > 0 ? Math.round(sec) : 30;
+      onTimerSetting(safeSec);
+    }
+    setIsTimerDialogOpen(false);
+  };
+
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (turnTimerSeconds == null || !activePlayerId) {
+      setRemainingSeconds(null);
+      return;
+    }
+
+    // 新しい手番ごとにタイマーをリセット
+    const full = turnTimerSeconds;
+    setRemainingSeconds(full);
+
+    const start = Date.now();
+    const id = window.setInterval(() => {
+      const elapsed = Math.floor((Date.now() - start) / 1000);
+      const next = Math.max(full - elapsed, -60);
+      setRemainingSeconds(next);
+    }, 300);
+
+    return () => window.clearInterval(id);
+  }, [activePlayerId, room.turnIndex, turnTimerSeconds]);
+
   return (
     <div className="game-board-root">
       {/* ヘッダーゾーン（高さ10%想定） */}
       <div className="gb-header">
         <div className="gb-header-inner">
-        {isHost && (
-          <button
-            type="button"
-            className="gb-skip-button gb-skip-button--ghost"
-            aria-hidden="true"
-            tabIndex={-1}
-          >
-            <span className="gb-skip-icon">⏩️</span>
-            <span className="gb-skip-label">プレイヤーをスキップ</span>
-          </button>
-        )}
+          <div className="gb-header-timer-container">
+            {isHost && (
+              <button
+                type="button"
+                className="gb-timer-button"
+                onClick={openTimerDialog}
+              >
+                <span className="gb-timer-icon">⏰</span>
+                <span className="gb-timer-label">タイマーを設定</span>
+              </button>
+            )}
+          </div>
+
+          {/* ★ 真ん中：誰のターン + 残り時間 */}
           <div className="gb-header-title">
             {activePlayer ? (
               <>
@@ -80,6 +143,16 @@ export function GameBoardPage({
                   {activePlayerId === myPlayerId ? "あなた" : activePlayer.name}
                 </span>
                 <span className="gb-header-label">のターン</span>
+                {turnTimerSeconds != null && remainingSeconds != null && (
+                  <span
+                    className={
+                      "gb-header-time" +
+                      (remainingSeconds <= 0 ? " gb-header-time--over" : remainingSeconds <= 5 ? " gb-header-time--danger" : "")
+                    }
+                  >
+                    （残り {remainingSeconds} 秒）
+                  </span>
+                )}
               </>
             ) : (
               <span className="gb-header-label">
@@ -88,18 +161,21 @@ export function GameBoardPage({
             )}
           </div>
 
-          {isHost && (
-            <button
-              type="button"
-              className="gb-skip-button"
-              onClick={handleSkipPlayer}
-            >
-              <span className="gb-skip-icon">⏩️</span>
-              <span className="gb-skip-label">プレイヤーをスキップ</span>
-            </button>
-          )}
+          <div className="gb-header-skip-button-container">
+            {isHost && (
+              <button
+                type="button"
+                className="gb-skip-button"
+                onClick={handleSkipPlayer}
+              >
+                <span className="gb-skip-icon">⏩️</span>
+                <span className="gb-skip-label">プレイヤーをスキップ</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
 
       {/* インストラクションゾーン（高さ3%想定） */}
       <div className="gb-instruction-zone">
@@ -271,6 +347,49 @@ export function GameBoardPage({
         </div>
 
       </div>
+      {/* ★ タイマー設定ダイアログ */}
+    {isTimerDialogOpen && (
+      <div className="gb-timer-dialog-backdrop" onClick={closeTimerDialog}>
+        <div
+          className="gb-timer-dialog"
+          onClick={(e) => e.stopPropagation()} // 中身クリックで閉じないように
+        >
+          <div className="gb-timer-dialog-title">⏰ タイマー設定</div>
+
+          <label className="gb-timer-toggle">
+            <input
+              type="checkbox"
+              checked={timerOn}
+              onChange={(e) => setTimerOn(e.target.checked)}
+            />
+            <span>タイマーを使う</span>
+          </label>
+
+          <label className="gb-timer-seconds-label">
+            <span>制限時間（秒）</span>
+            <input
+              type="number"
+              min={5}
+              max={600}
+              step={5}
+              value={timerSecondsInput}
+              onChange={(e) => setTimerSecondsInput(e.target.value)}
+              disabled={!timerOn}
+              className="gb-timer-seconds-input"
+            />
+          </label>
+
+          <div className="gb-timer-dialog-actions">
+            <button type="button" onClick={closeTimerDialog}>
+              キャンセル
+            </button>
+            <button type="button" onClick={handleTimerSave}>
+              保存
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </div>
   );
 }

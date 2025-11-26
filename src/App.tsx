@@ -163,6 +163,23 @@ function App() {
     }
   };
 
+  const handleTimerSetting = async (seconds: number | null) => {
+    if (!room) return;
+    if (!room.activePlayerId) return;
+    if (!isHost) return;                   // 念のためホストだけ
+    if (playerId && room.hostId !== playerId) return;
+
+    try {
+      const ref = doc(db, "rooms", room.code);
+      await updateDoc(ref, {
+        turnTimerSeconds: seconds,
+      });
+    } catch (err) {
+      console.error("タイマー設定の更新に失敗:", err);
+      alert("タイマー設定の保存に失敗しました。もう一度試してください。");
+    }
+  }
+
   const handleSkipPlayer = async () => {
     // 基本的なガード
     if (!room) return;
@@ -325,6 +342,7 @@ function App() {
         onDrawFromDiscard={handleDrawFromDiscard}
         onDiscard={handleDiscardCard}
         onSkipPlayer={handleSkipPlayer}
+        onTimerSetting={handleTimerSetting}
       />
     );
   }
