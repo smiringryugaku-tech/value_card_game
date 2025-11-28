@@ -24,7 +24,7 @@
   height: clamp(120px, 22vw, 150px);
   border-radius: 50%;
   overflow: hidden;
-  background-color: #fffaf0;
+  background-color: #f0fcff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -81,18 +81,18 @@
   width: min(320px, 80vw);
   padding: 0.6rem 0.8rem;
   border-radius: 999px;
-  border: 1px solid #d08a2a;
+  border: 1px solid #2a75d0;
   font-size: 1rem;
   text-align: center;
   box-sizing: border-box;
-  background-color: #fffdf7;
+  background-color: #f7feff;
   margin-bottom: 3rem;
 }
 
 .title-name-input:focus {
   outline: none;
-  border-color: #d0a963;
-  box-shadow: 0 0 0 2px rgba(208, 169, 99, 0.28);
+  border-color: #63aad0;
+  box-shadow: 0 0 0 2px rgba(99, 155, 208, 0.28);
 }
 
 /* モード選択ボタン（横並び） */
@@ -117,23 +117,23 @@
 
 .title-mode-button--primary {
   background-color: #ffffff;
-  border-color: #d0a963;
-  color: #4b2a00;
+  border-color: #63b7d0;
+  color: #001a4b;
 }
 
 .title-mode-button--primary:hover:not(:disabled) {
-  background-color: #fff6e5;
+  background-color: #e5f6ff;
 }
 
 .title-mode-button--secondary {
-  background: linear-gradient(135deg, #ffd27f, #ffb74d);
-  border-color: #d08a2a;
-  color: #4b2a00;
+  background: linear-gradient(135deg, #7fddff, #4da3ff);
+  border-color: #2a83d0;
+  color: #00224b;
   font-weight: 600;
 }
 
 .title-mode-button--secondary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #ffce70, #ffae3a);
+  background: linear-gradient(135deg, #70c6ff, #3a89ff);
 }
 
 /* 無効時 */

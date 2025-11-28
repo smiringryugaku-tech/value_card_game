@@ -9,7 +9,7 @@ body,
 /* 背景色と、画面全体のスクロール禁止 */
 body {
   color: #12242e;
-  background-color: #fff4d1; /* 薄いクリームっぽい色 */
+  background-color: #d1ecff; /* 薄いクリームっぽい色 */
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 

@@ -46,7 +46,7 @@
 .lobby-room-code {
   font-size: 1.2rem;
   font-weight: 600;
-  color: #4b2a00
+  color: #00134b
 }
 
 .lobby-room-code-row {
@@ -73,19 +73,19 @@
   padding: 0.3rem;
   font-size: 0.8rem;
   border-radius: 5px;
-  border: 2px solid #d0a963;
-  background-color: #fffaf0;
+  border: 2px solid #638fd0;
+  background-color: #f0f9ff;
   cursor: pointer;
 }
 
 .invitation-copy-button:hover {
-  background-color: #ffefcf;
+  background-color: #cfecff;
 }
 
 .lobby-host-message {
   margin-top: 0.7rem;
   font-size: 0.97rem;
-  color: #7a4b00;
+  color: #00417a;
 }
 
 /* ===== プレイヤーリスト枠 ===== */
@@ -101,7 +101,7 @@
   min-height: 180px;
   border-radius: 12px;
   border: 1px solid rgba(0, 0, 0, 0.08);
-  background-color: #fffaf0;
+  background-color: #f0fdff;
   padding: 0.8rem 1rem;
   display: flex;
   flex-direction: column;
@@ -212,7 +212,7 @@
   flex: 0 0 auto;
   border-radius: 12px;
   border: 1px solid rgba(0, 0, 0, 0.08);
-  background-color: #fffaf0;
+  background-color: #f0fdff;
   padding: 0.9rem 1.1rem 1rem;
   display: flex;
   flex-direction: column;
@@ -251,7 +251,7 @@
   appearance: none;
   height: 6px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #ffd27f, #ffa94d);
+  background: linear-gradient(90deg, #7fd0ff, #4d82ff);
   outline: none;
   margin-top: 0.2rem;
 }
@@ -264,7 +264,7 @@
   height: 18px;
   border-radius: 50%;
   background: #ffffff;
-  border: 2px solid #e5a63a;
+  border: 2px solid #3a62e5;
   cursor: pointer;
   box-shadow: 0 0 0 2px rgba(229, 166, 58, 0.2);
 }
@@ -274,9 +274,9 @@
   height: 18px;
   border-radius: 50%;
   background: #ffffff;
-  border: 2px solid #e5a63a;
+  border: 2px solid #3a6ae5;
   cursor: pointer;
-  box-shadow: 0 0 0 2px rgba(229, 166, 58, 0.2);
+  box-shadow: 0 0 0 2px rgba(58, 124, 229, 0.2);
 }
 
 /* スライダーの最小値・最大値の目盛りテキスト */
@@ -295,8 +295,8 @@
   align-self: center;
   padding: 0.55rem 1.6rem;
   border-radius: 999px;
-  border: 1px solid #d08a2a;
-  background: linear-gradient(135deg, #ffd27f, #ffb74d);
+  border: 1px solid #2a6ad0;
+  background: linear-gradient(135deg, #7fddff, #4da3ff);
   color: #4b2a00;
   font-size: 1rem;
   font-weight: 600;
@@ -305,7 +305,7 @@
 }
 
 .lobby-start-button:hover {
-  background: linear-gradient(135deg, #ffce70, #ffae3a);
+  background: linear-gradient(135deg, #70c6ff, #3a89ff);
 }
 
 /* ===== スマホのとき少し詰める ===== */
