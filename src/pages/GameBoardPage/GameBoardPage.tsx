@@ -3,7 +3,7 @@ import type { CardId, Player, Room } from "../../types";
 import { useEffect, useState } from "react";
 import "./GameBoardPage.css";
 // パスはあなたのプロジェクトに合わせて変えてね
-import { cardDict, getCardImageUrl } from "../../utils/cardImage";
+import { cardDict, getCardImageUrl } from "../../utils/cardInfo";
 
 type GameBoardPageProps = {
   room: Room;
@@ -59,6 +59,20 @@ export function GameBoardPage({
     );
   }, [room.turnTimerSeconds]);
 
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      // ここが true の時だけ警告したい（例: ゲーム中だけ）
+      const shouldWarn = true;
+      if (!shouldWarn) return;
+
+      e.preventDefault();
+      // Chrome系では returnValue の文字は無視されることが多い
+      e.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
 
   // インストラクションテキスト
   let instruction: string | null = null;

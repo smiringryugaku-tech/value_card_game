@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import "./App.css";
 import { TitlePage } from "./pages/TitlePage/TitlePage";
 import { RoomSetupPage } from "./pages/RoomSetupPage/RoomSetupPage";
 import { LobbyPage } from "./pages/LobbyPage/LobbyPage";
 import { GameBoardPage } from "./pages/GameBoardPage/GameBoardPage";
 import { ResultPage } from "./pages/ResultPage/ResultPage";
-import type { CardId, Mode, Player, Room, Screen } from "./types";
+import type { CardFrom, CardId, Mode, Player, Room, Screen } from "./types";
 import { getOrCreatePlayerId } from "./utils/playerId";
 import {
   createRoom,
@@ -31,6 +31,7 @@ function App() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [cardCount, setCardCount] = useState(70);
   const [room, setRoom] = useState<Room | null>(null);
+  const cardFromRef = useRef<CardFrom>("deck");
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -132,6 +133,7 @@ function App() {
     if (!room || !playerId) return;
     try {
       await drawFromDeck(room.code, playerId);
+      cardFromRef.current = "deck";
     } catch (err) {
       console.error(err);
       alert((err as Error).message);
@@ -142,6 +144,7 @@ function App() {
     if (!room || !playerId) return;
     try {
       await drawFromDiscardPile(room.code, playerId, fromPlayerId, cardIndex);
+      cardFromRef.current = "discard";
     } catch (err) {
       console.error(err);
       alert((err as Error).message);
@@ -153,10 +156,10 @@ function App() {
   
     const now = Date.now();
     const delaySec =
-      turnStartTime != null ? Math.round((now - turnStartTime) / 1000) : null;
+      turnStartTime != null ? Math.round(((now - turnStartTime) / 1000) * 100) / 100 : null;
   
     try {
-      await discardCardAndAdvanceTurn(room.code, playerId, cardId, delaySec);
+      await discardCardAndAdvanceTurn(room.code, playerId, cardFromRef.current, cardId, delaySec);
     } catch (err) {
       console.error(err);
       alert((err as Error).message);

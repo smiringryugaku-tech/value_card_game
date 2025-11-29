@@ -7,9 +7,11 @@ export type Player = {
 
 export type Screen = "title" | "roomSetup" | "lobby" | "game" | "result";
 
+export type CardFrom = "deck" | "discard";
 export type CardId = number;
 
 export type DiscardLogEntry = {
+  cardFrom: CardFrom;
   cardId: CardId;
   delaySec: number;
   turnIndex: number;

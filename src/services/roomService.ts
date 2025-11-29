@@ -6,7 +6,7 @@ import {
     serverTimestamp,
   } from "firebase/firestore";
   import { db } from "../firebase";
-  import type { Room } from "../types";
+  import type { CardFrom, Room } from "../types";
   import { createInitialGameState } from "../game/setup";
   import {
     applyDrawFromDeck,
@@ -227,6 +227,7 @@ export async function drawFromDiscardPile(
 export async function discardCardAndAdvanceTurn(
   roomCode: string,
   playerId: string,
+  cardFrom: CardFrom,
   cardId: number,
   delaySec: number | null
 ) {
@@ -238,7 +239,7 @@ export async function discardCardAndAdvanceTurn(
     if (!snap.exists()) throw new Error("ルームが存在しません。");
 
     const room = snap.data() as Room;
-    const update = applyDiscardAndAdvance(room, playerId, cardId, delaySec);
+    const update = applyDiscardAndAdvance(room, playerId, cardFrom, cardId, delaySec);
 
     tx.update(roomRef, {
       ...update,

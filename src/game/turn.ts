@@ -1,5 +1,5 @@
 // src/game/turn.ts
-import type { CardId, DiscardLogEntry, Room } from "../types";
+import type { CardFrom, CardId, DiscardLogEntry, Room } from "../types";
 
 function ensureArray<T>(value: T[] | undefined): T[] {
   return Array.isArray(value) ? value.slice() : [];
@@ -117,6 +117,7 @@ export function applyDrawFromDiscard(
 export function applyDiscardAndAdvance(
   room: Room,
   playerId: string,
+  cardFrom: CardFrom,
   cardId: CardId,
   delaySec: number | null
 ): Partial<Room> {
@@ -150,6 +151,7 @@ export function applyDiscardAndAdvance(
   // ログに追加
   const turnIndex = room.turnIndex ?? 0;
   const entry: DiscardLogEntry = {
+    cardFrom,
     cardId,
     delaySec: delaySec ?? 0,
     turnIndex,

@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import "./ResultPage.css";
 import type { Room, Player, CardId } from "../../types";
-import { cardDict, getCardImageUrl } from "../../utils/cardImage";
+import { cardDict, getCardImageUrl } from "../../utils/cardInfo";
 
 type ResultPageProps = {
   room: Room;
