@@ -1,14 +1,18 @@
-import { getFunctions, httpsCallable } from "firebase/functions";
-import { getApp } from "firebase/app";
+import { httpsCallable } from "firebase/functions";
+import { functions } from "../firebase";
 
-type AnalyzeResponse = {
-  imageUrl: string;
+export type AnalyzeResponse = {
+  imageUrl?: string;
+  imagePath?: string;
   result?: { analysis: string };
+  fromCache?: boolean;
 };
 
 export async function analyzeWithGemini(roomId: string, playerId: string): Promise<AnalyzeResponse> {
-  const functions = getFunctions(getApp()); // firebase/app 初期化済み前提
-  const fn = httpsCallable(functions, "analyzeWithGemini");
+  const fn = httpsCallable<{ roomId: string; playerId: string }, AnalyzeResponse>(
+    functions,
+    "analyzeWithGemini"
+  );
   const res = await fn({ roomId, playerId });
-  return res.data as AnalyzeResponse;
+  return res.data;
 }

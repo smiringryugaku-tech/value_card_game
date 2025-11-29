@@ -4,6 +4,10 @@ import "./ResultPage.css";
 import type { Room, Player, CardId } from "../../types";
 import { cardDict, getCardImageUrl } from "../../utils/cardInfo";
 import { analyzeWithGemini } from "../../api/analyze";
+import { httpsCallable } from "firebase/functions";
+import { functions } from "../../firebase";
+
+const getDownloadUrlFn = httpsCallable(functions, "getValueSheetDownloadUrl");
 
 type ResultPageProps = {
   room: Room;
@@ -26,6 +30,7 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
   const [analyzeMsg, setAnalyzeMsg] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [analysisImageUrl, setAnalysisImageUrl] = useState<string | null>(null);
+  const [analysisImagePath, setAnalysisImagePath] = useState<string | null>(null);
   const [analysisText, setAnalysisText] = useState<string | null>(null);
   const roomId = (room as any).id ?? (room as any).code;
 
@@ -59,6 +64,7 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
       const data = await analyzeWithGemini(roomId, myPlayerId);
   
       setAnalysisImageUrl(data.imageUrl ?? null);
+      setAnalysisImagePath(data.imagePath ?? null);
       setAnalysisText(data.result?.analysis ?? null);
   
       setAnalyzeStatus("done");
@@ -67,7 +73,7 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
     } catch (e: any) {
       console.error(e);
       setAnalyzeStatus("error");
-      setAnalyzeMsg("分析に失敗しました。もう一度お試しください。");
+      setAnalyzeMsg("分析に失敗しました。もう一度お試しください。\n解決しない場合はカスタマーサポートにお問い合わせください。");
     }
   };
 
@@ -79,17 +85,26 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
 
   const analyzeButtonDisabled = analyzeStatus === "running";
 
-  const handleDownload = () => {
-    if (!analysisImageUrl) return;
+  const handleDownload = async () => {
+    if (!analysisImagePath) return; // ← imageUrlではなく imagePath を保存しておくのがポイント
   
-    const a = document.createElement("a");
-    a.href = analysisImageUrl;
-    a.download = `value_sheet_${roomId}_${myPlayerId}.png`;
+    const filename = `value_sheet_${roomId}_${myPlayerId}.png`;
   
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  };  
+    const res = await getDownloadUrlFn({
+      imagePath: analysisImagePath,
+      filename,
+    });
+  
+    const url = (res.data as any).url as string | undefined;
+    if (!url) throw new Error("download url missing");
+  
+    // ① 新しいタブで開く（ほぼ確実）
+    // window.open(url, "_blank", "noopener,noreferrer");
+  
+    // ② 同タブで即ダウンロード開始したいなら
+    window.location.href = url;
+  };
+  
 
   const mySlots: Array<CardId | null> = Array.from(
     { length: 5 },
@@ -171,6 +186,9 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
           {analyzeStatus === "running" && <span className="mini-spinner" />}
           {analyzeButtonLabel}
         </button>
+      </div>
+
+      <div className="analyze-msg-container">
         {analyzeMsg && (
           <div className={`analyze-msg analyze-msg--${analyzeStatus}`}>
             {analyzeMsg}
@@ -283,7 +301,7 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
             <button
               className="result-btn result-btn-primary"
               onClick={handleDownload}
-              disabled={!analysisImageUrl}
+              disabled={!analysisImagePath}
             >
               ダウンロード
             </button>

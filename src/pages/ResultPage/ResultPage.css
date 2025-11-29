@@ -307,7 +307,8 @@
   min-height: 100px;
 }
 
-.analyze-msg { margin-top: 10px; font-size: 14px; opacity: 0.9; }
+.analyze-msg-container { display: flex; justify-content: flex-end; }
+.analyze-msg { margin-top: 10px; font-size: 14px; opacity: 0.9;}
 .analyze-msg--running { color: #555; }
 .analyze-msg--done { color: #1b7f3a; font-weight: 600; }
 .analyze-msg--error { color: #c0392b; font-weight: 600; }
@@ -341,6 +342,13 @@
 .modal-header { display: flex; align-items: center; justify-content: space-between; }
 .modal-title { font-size: 18px; font-weight: 800; }
 .modal-close { border: none; background: transparent; font-size: 26px; cursor: pointer; }
-.modal-image { width: 100%; height: auto; border-radius: 12px; margin-top: 10px; }
+
+.modal-image {
+  display: block;
+  max-height: 70vh;
+  width: auto;
+  margin: 10px auto 0;
+}
+
 .modal-actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
 .modal-text { margin-top: 12px; white-space: pre-wrap; }
