@@ -1,8 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
-import { cardDict } from "../utils/cardInfo";
-import { geminiPrompt } from "../utils/prompts";
+import { cardDict } from "./utils/cardInfo";
+import { geminiPrompt } from "./utils/prompts";
 
 // 返してほしいJSONの“形”をここで固定（あなたのプロンプトもこの形に合わせる）
 export const analysisResultSchema = z.object({
@@ -11,7 +10,7 @@ export const analysisResultSchema = z.object({
 
 export type AnalysisResult = z.infer<typeof analysisResultSchema>;
 
-export async function runGeminiAnalysis(apiKey, playerName, finalCardsId: number[], scoreDiscardLogs: Array<{ cardId: number; score: number }>): Promise<AnalysisResult> {
+export async function runGeminiAnalysis(apiKey: any, playerName: string, finalCardsId: number[], scoreDiscardLogs: Array<{ cardId: number; score: number }>): Promise<AnalysisResult> {
 
   const ai = new GoogleGenAI({});
 

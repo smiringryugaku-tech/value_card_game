@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import "./ResultPage.css";
 import type { Room, Player, CardId } from "../../types";
 import { cardDict, getCardImageUrl } from "../../utils/cardInfo";
+import { analyzeWithGemini } from "../../api/analyze";
 
 type ResultPageProps = {
   room: Room;
@@ -19,6 +20,14 @@ function getCardTexts(cardId: CardId) {
 
 export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPageProps) {
   const [isNarrow, setIsNarrow] = useState(false);
+  type AnalyzeStatus = "idle" | "running" | "done" | "error";
+
+  const [analyzeStatus, setAnalyzeStatus] = useState<AnalyzeStatus>("idle");
+  const [analyzeMsg, setAnalyzeMsg] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [analysisImageUrl, setAnalysisImageUrl] = useState<string | null>(null);
+  const [analysisText, setAnalysisText] = useState<string | null>(null);
+  const roomId = (room as any).id ?? (room as any).code;
 
   useEffect(() => {
     const update = () => {
@@ -35,9 +44,52 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
 
   const otherPlayers = players.filter((p) => p.id !== myPlayerId);
 
-  const handleAnalyze = () => {
-    alert("AI分析（あとで実装するよ！）");
+  const handleAnalyze = async () => {
+    // すでに完了してたら、モーダルを開くだけ
+    if (analyzeStatus === "done" && analysisImageUrl) {
+      setIsModalOpen(true);
+      return;
+    }
+  
+    try {
+      setAnalyzeStatus("running");
+      setAnalyzeMsg("分析しています...（10〜30秒くらいかかることがあります）");
+  
+      // ここで callable 呼ぶ（例）
+      const data = await analyzeWithGemini(roomId, myPlayerId);
+  
+      setAnalysisImageUrl(data.imageUrl ?? null);
+      setAnalysisText(data.result?.analysis ?? null);
+  
+      setAnalyzeStatus("done");
+      setAnalyzeMsg("分析が完了しました！「分析結果を見る」から確認できます。");
+      setIsModalOpen(true); // 完了したら自動で開くのも気持ちいい
+    } catch (e: any) {
+      console.error(e);
+      setAnalyzeStatus("error");
+      setAnalyzeMsg("分析に失敗しました。もう一度お試しください。");
+    }
   };
+
+  const analyzeButtonLabel =
+  analyzeStatus === "running" ? "分析中..." :
+  analyzeStatus === "done" ? "分析結果を見る" :
+  analyzeStatus === "error" ? "再試行" :
+  "AI分析";
+
+  const analyzeButtonDisabled = analyzeStatus === "running";
+
+  const handleDownload = () => {
+    if (!analysisImageUrl) return;
+  
+    const a = document.createElement("a");
+    a.href = analysisImageUrl;
+    a.download = `value_sheet_${roomId}_${myPlayerId}.png`;
+  
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };  
 
   const mySlots: Array<CardId | null> = Array.from(
     { length: 5 },
@@ -114,9 +166,16 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
           type="button"
           className="result-btn result-btn-secondary"
           onClick={handleAnalyze}
+          disabled={analyzeButtonDisabled}
         >
-          AI分析
+          {analyzeStatus === "running" && <span className="mini-spinner" />}
+          {analyzeButtonLabel}
         </button>
+        {analyzeMsg && (
+          <div className={`analyze-msg analyze-msg--${analyzeStatus}`}>
+            {analyzeMsg}
+          </div>
+        )}
       </div>
 
       <section className="result-header">
@@ -206,6 +265,43 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
         </div>
       </section>
       <div className="bottom-spacer"/>
+      {isModalOpen && (
+        <div className="modal-backdrop" onClick={() => setIsModalOpen(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title">AI分析結果</div>
+              <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
+            </div>
+
+            {analysisImageUrl ? (
+              <img className="modal-image" src={analysisImageUrl} alt="AI分析結果" />
+            ) : (
+              <div className="modal-empty">画像がまだありません</div>
+            )}
+
+            <div className="modal-actions">
+            <button
+              className="result-btn result-btn-primary"
+              onClick={handleDownload}
+              disabled={!analysisImageUrl}
+            >
+              ダウンロード
+            </button>
+
+              <button
+                className="result-btn result-btn-secondary"
+                onClick={() => setIsModalOpen(false)}
+              >
+                閉じる
+              </button>
+            </div>
+
+            {analysisText && (
+              <pre className="modal-text">{analysisText}</pre>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

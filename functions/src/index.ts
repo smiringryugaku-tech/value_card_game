@@ -94,7 +94,7 @@ const spec = makeValueSheetSpec({
 const outBuf = await composeImage(spec);
 
 const bucket = getStorage().bucket();
-const outPath = `generated/valueSheets/${roomId}/${playerId}/${Date.now()}.png`;
+const outPath = `generated/valueSheets/${roomId}/${playerId}/your_value_${Date.now()}.png`;
 const file = bucket.file(outPath);
 
 await file.save(outBuf, { contentType: "image/png", resumable: false });

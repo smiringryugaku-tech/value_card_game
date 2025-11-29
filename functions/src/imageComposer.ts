@@ -109,6 +109,11 @@ async function downloadGsFile(gsPath: string): Promise<Buffer> {
 
 export async function composeImage(spec: ComposeSpec): Promise<Buffer> {
   const base = await downloadGsFile(spec.templateGsPath);
+
+  const meta = await sharp(base).metadata();
+  const templateWidth = meta.width ?? 0;
+  const templateHeight = meta.height ?? 0;
+
   let pipeline = sharp(base);
 
   const composites: sharp.OverlayOptions[] = [];

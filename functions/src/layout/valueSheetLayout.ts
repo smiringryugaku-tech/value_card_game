@@ -2,44 +2,48 @@ import { ComposeSpec } from "../imageComposer";
 
 export function makeValueSheetSpec(params: {
   playerName: string;
-  dateText: string;
-  analysisText: string; // すでに \n 入り想定
+  dateText: string;      // "2025.11.27"
+  analysisText: string;  // すでに \n 入り
 }): ComposeSpec {
+  const W = 1352;
+  const H = 2402;
+
   return {
     templateGsPath: "assets/templates/value_sheet_base.png",
     output: { format: "png" },
     layers: [
+      // 名前 + 日付（1行で中央寄せが一番崩れにくい）
       {
         type: "text",
-        text: params.playerName,
-        left: 80, top: 90,
-        width: 900, height: 120,
-        fontSize: 64,
-        align: "left",
-        fill: "#111",
+        text: `${params.playerName}    ${params.dateText}`,
+        left: 0,
+        top: 351,
+        width: W,
+        height: 90,
+        fontSize: 56,
+        align: "center",
+        fill: "#4a2f16",
         stroke: "#ffffff",
-        strokeWidth: 6,
+        strokeWidth: 10,
+        fontWeight: 800,
       },
-      {
-        type: "text",
-        text: params.dateText,
-        left: 80, top: 175,
-        width: 900, height: 60,
-        fontSize: 32,
-        fill: "#333",
-      },
+
+      // 雲の中の分析文（中央寄せが見た目良い）
       {
         type: "text",
         text: params.analysisText,
-        left: 80, top: 280,
-        width: 920, height: 520,
-        fontSize: 34,
+        left: 320,
+        top: 877,
+        width: 710,
+        height: 581,
+        fontSize: 40,
         lineHeight: 1.35,
-        fill: "#111",
+        align: "center",
+        fill: "#3a2a1a",
+        stroke: "#ffffff",
+        strokeWidth: 8,
+        fontWeight: 700,
       },
-
-      // 例: バッジ画像
-      // { type: "image", gsPath: "assets/badges/star.png", left: 930, top: 70, width: 120, height: 120, fit: "contain" },
     ],
   };
 }
