@@ -11,7 +11,8 @@ import { runGeminiAnalysis } from "./geminiAnalysis";
 import { composeImage } from "./imageComposer";
 import { makeValueSheetSpec } from "./layout/valueSheetLayout";
 
-import sharp from "sharp";
+import { computeAxisScores } from "./valueAxisScoring";
+import { cardDict } from "./utils/cardInfo";
 
 initializeApp();
 const db = getFirestore();
@@ -75,7 +76,7 @@ export const getValueSheetDownloadUrl = onCall(async (req) => {
     throw new HttpsError("permission-denied", "invalid imagePath");
   }
 
-  const bucket = getStorage().bucket();
+  const bucket = getStorage().bucket("personal-value-card-game.appspot.com");
   const file = bucket.file(imagePath);
 
   const [exists] = await file.exists();
@@ -96,7 +97,13 @@ export const getValueSheetDownloadUrl = onCall(async (req) => {
   return { url };
 });
 
-export const analyzeWithGemini = onCall({ secrets: [GEMINI_API_KEY] }, async (req) => {
+export const analyzeWithGemini = onCall({ 
+  secrets: [GEMINI_API_KEY],
+  memory: "1GiB",
+  timeoutSeconds: 60,
+  concurrency: 1,
+  maxInstances: 6,
+}, async (req) => {
   try {
     const { roomId, playerId } = req.data ?? {};
     if (!roomId || !playerId) {
@@ -146,21 +153,51 @@ export const analyzeWithGemini = onCall({ secrets: [GEMINI_API_KEY] }, async (re
     const discardScores = Array.from(scoreMap.entries()).map(([cardId, score]) => ({ cardId, score }));
     console.log("🧮 Discard Scores:", discardScores, " 🧮");
 
-    const apiKey = process.env.GEMINI_API_KEY || GEMINI_API_KEY.value();
+    const apiKey = process.env.GEMINI_API_KEY_EMU || GEMINI_API_KEY.value();
     if (!apiKey) throw new HttpsError("failed-precondition", "GEMINI_API_KEY missing");
-    console.log("🔑 GEMINI_API_KEY length:", (process.env.GEMINI_API_KEY || GEMINI_API_KEY.value() || "").length, " 🔑");
+    console.log("🔑 GEMINI_API_KEY length:", (process.env.GEMINI_API_KEY_EMU || GEMINI_API_KEY.value() || "").length, " 🔑");
 
 
     const result = await runGeminiAnalysis(apiKey, playerName, finalHandCardIds, discardScores);
+
+    const axisRes = computeAxisScores(
+      {
+        finalHandCardIds,
+        discardScores,
+      },
+      {
+        alpha: 0.35,
+        compress: "log1p",
+        excludeFinalFromDiscard: true,
+        confidenceTargetAbs: 60,
+      }
+    );
+    
+    // あなたのUIは「E/A/D/Lが0、反対が100」なので反転
+    const valueTypeScores = (["ES", "AC", "DW", "LI"] as const).map(
+      (ax) => 100 - axisRes[ax].score100
+    );
+
+    const [ES, AC, DW, LI] = valueTypeScores;
+
+    const es = ES >= 50 ? "S" : "E";
+    const ac = AC >= 50 ? "C" : "A";
+    const dw = DW >= 50 ? "W" : "D";
+    const li = LI >= 50 ? "I" : "L";
+
+    const valueTypeAlphabet = `${es}${ac}${dw}${li}`;
 
     const analysisText = result.analysis;
 
     const TEMPLATE_PATH = "assets/templates/value_sheet_base_temp.png";
     const bucket = getStorage().bucket();
-    const [baseBuf] = await bucket.file(TEMPLATE_PATH).download();
-    const meta = await sharp(baseBuf).metadata();
-    const W = meta.width ?? 0;
-    const H = meta.height ?? 0;
+    // const [baseBuf] = await bucket.file(TEMPLATE_PATH).download();
+    // const meta = await sharp(baseBuf).metadata();
+    // const W = meta.width ?? 0;
+    // const H = meta.height ?? 0;
+
+    const W = 1350;
+    const H = 2400;
 
     const spec = makeValueSheetSpec({
       templatePath: TEMPLATE_PATH,
@@ -168,8 +205,8 @@ export const analyzeWithGemini = onCall({ secrets: [GEMINI_API_KEY] }, async (re
       dateText: joinedAtISO.slice(0, 10),
       finalHandCardIds,
       analysisText,
-      valueType: ["ABCD", "仲良しな\nアンパンマン"],
-      valueTypeScores: [0, 33, 67, 100],
+      valueType: [valueTypeAlphabet, "仲良しな\nアンパンマン"],
+      valueTypeScores,
       canvasWidth: W,
       canvasHeight: H,
     });

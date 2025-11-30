@@ -49,6 +49,21 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
 
   const otherPlayers = players.filter((p) => p.id !== myPlayerId);
 
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      // ここが true の時だけ警告したい（例: ゲーム中だけ）
+      const shouldWarn = true;
+      if (!shouldWarn) return;
+
+      e.preventDefault();
+      // Chrome系では returnValue の文字は無視されることが多い
+      e.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
+
   const handleAnalyze = async () => {
     // すでに完了してたら、モーダルを開くだけ
     if (analyzeStatus === "done" && analysisImageUrl) {

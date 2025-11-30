@@ -1,5 +1,11 @@
 import sharp from "sharp";
 import { getStorage } from "firebase-admin/storage";
+import fs from "fs";
+import path from "path";
+
+const FONT_NOTO_PATH = path.join(__dirname, "../assets/fonts/NotoSansJP-VariableFont_wght.ttf");
+const FONT_NOTO_B64 = fs.readFileSync(FONT_NOTO_PATH).toString("base64");
+const EMBED_FONT_NAME = "EmbeddedNotoSansJP";
 
 type Align = "left" | "center" | "right";
 
@@ -55,7 +61,7 @@ function buildTextSvg(layer: TextLayer): Buffer {
     fontSize,
     lineHeight = 1.25,
     letterSpacing,
-    fontFamily = `Noto Sans JP, Noto Sans CJK JP, Noto Sans, Arial, sans-serif`,
+    fontFamily = `${EMBED_FONT_NAME}, Noto Sans JP, Noto Sans CJK JP, Noto Sans, Arial, sans-serif`,
     fontWeight = 600,
     fill = "#111",
     align = "left",
@@ -65,6 +71,7 @@ function buildTextSvg(layer: TextLayer): Buffer {
 
   const lines = (text ?? "").split("\n").map((l) => escapeXml(l));
   const lhPx = fontSize * lineHeight;
+
 
   const x =
     align === "center" ? width / 2 :
@@ -92,8 +99,14 @@ function buildTextSvg(layer: TextLayer): Buffer {
   const svg = `
   <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
     <style>
+      @font-face {
+        font-family: '${EMBED_FONT_NAME}';
+        src: url(data:font/ttf;base64,${FONT_NOTO_B64}) format('truetype');
+        font-weight: 100 900;
+        font-style: normal;
+      }
       .t {
-        font-family: ${fontFamily};
+        font-family: ${EMBED_FONT_NAME}, sans-serif;
         font-size: ${fontSize}px;
         font-weight: ${fontWeight};
         fill: ${fill};

@@ -41,7 +41,7 @@ export function makeValueSheetSpec(params: {
   const KNOB_WIDTH = 60;
   const KNOB_HEIGHT = KNOB_WIDTH;
   const KNOB_UNIT = (W - (KNOB_LEFT_START * 2) - KNOB_WIDTH) / 100;
-  const KNOB_TOP = 1725;
+  const KNOB_TOP = 1724;
   const KNOB_GAP = 125;
 
   const labels = [["リスク姿勢", "E", "S"], ["関係志向", "A", "C"], ["幸福観", "D", "W"], ["意思決定", "L", "I"]];
@@ -50,7 +50,7 @@ export function makeValueSheetSpec(params: {
       type: "text" as const,
       text: `${labels[index][0]}　${score > 50 ? labels[index][2] : labels[index][1]}:${score > 50 ? score : 100-score}`,
       left: 0,
-      top: KNOB_TOP + index * (KNOB_GAP) - 60,
+      top: KNOB_TOP + index * (KNOB_GAP) - 45,
       width: W,
       height: 50,
       fontSize: 25,
@@ -118,7 +118,7 @@ export function makeValueSheetSpec(params: {
         type: "text",
         text: params.valueType[0],
         left: 0,
-        top: 1600,
+        top: 1597,
         width: W,
         height: 90,
         fontSize: 50,
@@ -127,14 +127,14 @@ export function makeValueSheetSpec(params: {
         fill: "#38b6ff",
         stroke: "#ffffff",
         strokeWidth: 5,
-        fontWeight: 1000,
+        fontWeight: 800,
       },
 
       // 価値観タイプ
       {
         type: "text",
         text: params.valueType[1],
-        left: 800,
+        left: 750,
         top: 1600,
         width: 320,
         height: 90,
