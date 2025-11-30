@@ -73,7 +73,7 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
   
     try {
       setAnalyzeStatus("running");
-      setAnalyzeMsg("分析しています...（10〜30秒くらいかかることがあります）");
+      setAnalyzeMsg("分析しています...（30〜60秒くらいかかることがあります）");
   
       // ここで callable 呼ぶ（例）
       const data = await analyzeWithGemini(roomId, myPlayerId);
