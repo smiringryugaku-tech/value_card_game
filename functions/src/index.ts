@@ -1,4 +1,3 @@
-import "dotenv/config";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { logger } from "firebase-functions";
@@ -11,6 +10,8 @@ import { scoreDiscardLogsSorted, DiscardLogEntry } from "./scoreDiscardLogs";
 import { runGeminiAnalysis } from "./geminiAnalysis";
 import { composeImage } from "./imageComposer";
 import { makeValueSheetSpec } from "./layout/valueSheetLayout";
+
+import sharp from "sharp";
 
 initializeApp();
 const db = getFirestore();
@@ -38,7 +39,6 @@ async function findRecentValueSheet(params: {
   // 取り急ぎ最大50件くらい見れば十分（増えすぎ防止）
   const [files] = await bucket.getFiles({ prefix, maxResults: 50 });
 
-  // your_value_XXXXXXXXXXXXX.png だけ拾う
   const candidates = files
     .map((f) => f.name)
     .map((name) => {
@@ -144,24 +144,38 @@ export const analyzeWithGemini = onCall({ secrets: [GEMINI_API_KEY] }, async (re
 
     const scoreMap = scoreDiscardLogsSorted(discardLogs, { combine: "last" });
     const discardScores = Array.from(scoreMap.entries()).map(([cardId, score]) => ({ cardId, score }));
+    console.log("🧮 Discard Scores:", discardScores, " 🧮");
 
     const apiKey = process.env.GEMINI_API_KEY || GEMINI_API_KEY.value();
     if (!apiKey) throw new HttpsError("failed-precondition", "GEMINI_API_KEY missing");
-    console.log("GEMINI_API_KEY length:", (process.env.GEMINI_API_KEY || GEMINI_API_KEY.value() || "").length);
+    console.log("🔑 GEMINI_API_KEY length:", (process.env.GEMINI_API_KEY || GEMINI_API_KEY.value() || "").length, " 🔑");
 
 
     const result = await runGeminiAnalysis(apiKey, playerName, finalHandCardIds, discardScores);
 
     const analysisText = result.analysis;
+
+    const TEMPLATE_PATH = "assets/templates/value_sheet_base_temp.png";
+    const bucket = getStorage().bucket();
+    const [baseBuf] = await bucket.file(TEMPLATE_PATH).download();
+    const meta = await sharp(baseBuf).metadata();
+    const W = meta.width ?? 0;
+    const H = meta.height ?? 0;
+
     const spec = makeValueSheetSpec({
+      templatePath: TEMPLATE_PATH,
       playerName,
       dateText: joinedAtISO.slice(0, 10),
+      finalHandCardIds,
       analysisText,
+      valueType: ["ABCD", "仲良しな\nアンパンマン"],
+      valueTypeScores: [0, 33, 67, 100],
+      canvasWidth: W,
+      canvasHeight: H,
     });
 
     const outBuf = await composeImage(spec);
 
-    const bucket = getStorage().bucket();
     const outPath = `generated/valueSheets/${roomId}/${playerId}/your_value_${Date.now()}.png`;
     const file = bucket.file(outPath);
 

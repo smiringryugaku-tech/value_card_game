@@ -86,24 +86,41 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
   const analyzeButtonDisabled = analyzeStatus === "running";
 
   const handleDownload = async () => {
-    if (!analysisImagePath) return; // ← imageUrlではなく imagePath を保存しておくのがポイント
+    try {
+      console.log("[DL] start", { analysisImagePath, roomId, myPlayerId });
   
-    const filename = `value_sheet_${roomId}_${myPlayerId}.png`;
+      if (!analysisImagePath) {
+        console.warn("[DL] no analysisImagePath");
+        return;
+      }
   
-    const res = await getDownloadUrlFn({
-      imagePath: analysisImagePath,
-      filename,
-    });
+      const filename = `value_sheet_${roomId}_${myPlayerId}.png`;
+      console.log("[DL] calling getValueSheetDownloadUrl", { imagePath: analysisImagePath, filename });
   
-    const url = (res.data as any).url as string | undefined;
-    if (!url) throw new Error("download url missing");
+      const res = await getDownloadUrlFn({ imagePath: analysisImagePath, filename });
   
-    // ① 新しいタブで開く（ほぼ確実）
-    // window.open(url, "_blank", "noopener,noreferrer");
+      console.log("[DL] callable raw res", res);
+      console.log("[DL] callable res.data", res.data);
   
-    // ② 同タブで即ダウンロード開始したいなら
-    window.location.href = url;
+      const url = (res.data as any)?.url as string | undefined;
+      if (!url) throw new Error("download url missing");
+  
+      console.log("[DL] url", url);
+  
+      // ブロックされると null が返ることが多い
+      const w = window.open(url, "_blank", "noopener,noreferrer");
+      console.log("[DL] window.open result", w);
+  
+      if (!w) {
+        console.warn("[DL] window.open blocked; fallback to same-tab redirect");
+        window.location.assign(url);
+      }
+    } catch (e) {
+      console.error("[DL] failed", e);
+      alert(String(e));
+    }
   };
+  
   
 
   const mySlots: Array<CardId | null> = Array.from(

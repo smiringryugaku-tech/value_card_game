@@ -12,6 +12,7 @@ export type TextLayer = {
   height: number;            // テキストの描画ボックス（SVGの高さ）
   fontSize: number;
   lineHeight?: number;       // 1.2 など
+  letterSpacing?: number;
   fontFamily?: string;       // 日本語なら Noto Sans JP などを優先に並べる
   fontWeight?: number | string;
   fill?: string;             // "#111" 等
@@ -28,6 +29,7 @@ export type ImageLayer = {
   width?: number;            // 指定するならリサイズして貼る
   height?: number;
   fit?: "cover" | "contain" | "fill";
+  borderRadius?: number;
 };
 
 export type ComposeSpec = {
@@ -52,6 +54,7 @@ function buildTextSvg(layer: TextLayer): Buffer {
     height,
     fontSize,
     lineHeight = 1.25,
+    letterSpacing,
     fontFamily = `Noto Sans JP, Noto Sans CJK JP, Noto Sans, Arial, sans-serif`,
     fontWeight = 600,
     fill = "#111",
@@ -83,6 +86,9 @@ function buildTextSvg(layer: TextLayer): Buffer {
     ? `stroke="${stroke}" stroke-width="${strokeWidth}" paint-order="stroke fill"`
     : "";
 
+  const letterSpacingStyle =
+    letterSpacing != null ? `letter-spacing: ${letterSpacing}px;` : "";
+
   const svg = `
   <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
     <style>
@@ -91,6 +97,7 @@ function buildTextSvg(layer: TextLayer): Buffer {
         font-size: ${fontSize}px;
         font-weight: ${fontWeight};
         fill: ${fill};
+        ${letterSpacingStyle}
       }
     </style>
     <text class="t" x="${x}" y="${fontSize}" text-anchor="${anchor}" ${strokeAttrs}>
@@ -106,6 +113,27 @@ async function downloadGsFile(gsPath: string): Promise<Buffer> {
   const [buf] = await bucket.file(gsPath).download();
   return buf;
 }
+
+async function applyRoundedCorners(
+  img: sharp.Sharp,
+  width: number,
+  height: number,
+  radius: number
+): Promise<sharp.Sharp> {
+  const svg = Buffer.from(`
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0" y="0" width="${width}" height="${height}" rx="${radius}" ry="${radius}" />
+    </svg>
+  `);
+  
+  return img.composite([
+    {
+      input: svg,
+      blend: "dest-in",
+    },
+  ]);
+}
+
 
 export async function composeImage(spec: ComposeSpec): Promise<Buffer> {
   const base = await downloadGsFile(spec.templateGsPath);
@@ -129,12 +157,29 @@ export async function composeImage(spec: ComposeSpec): Promise<Buffer> {
     const imgBuf = await downloadGsFile(layer.gsPath);
     let img = sharp(imgBuf);
 
-    if (layer.width || layer.height) {
-      img = img.resize(layer.width, layer.height, { fit: layer.fit ?? "contain" });
+    // ここで最終サイズを決める
+    const targetWidth = layer.width;
+    const targetHeight = layer.height;
+
+    if (targetWidth || targetHeight) {
+      img = img.resize(targetWidth, targetHeight, {
+        fit: layer.fit ?? "contain",
+      });
     }
 
-    const input = await img.toBuffer();
-    composites.push({ input, left: layer.left, top: layer.top });
+    if (layer.borderRadius && layer.borderRadius > 0) {
+      const w = targetWidth ?? (await img.metadata()).width ?? 0;
+      const h = targetHeight ?? (await img.metadata()).height ?? 0;
+
+      img = await applyRoundedCorners(img, w, h, layer.borderRadius);
+    }
+
+    const input = await img.png().toBuffer();
+    composites.push({
+      input,
+      left: Math.round(layer.left),
+      top: Math.round(layer.top),
+    });
   }
 
   pipeline = pipeline.composite(composites);
