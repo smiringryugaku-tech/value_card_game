@@ -2,10 +2,37 @@ import sharp from "sharp";
 import { getStorage } from "firebase-admin/storage";
 import fs from "fs";
 import path from "path";
+import { execSync } from "child_process";
 
-const FONT_NOTO_PATH = path.join(__dirname, "../assets/fonts/NotoSansJP-VariableFont_wght.ttf");
-const FONT_NOTO_B64 = fs.readFileSync(FONT_NOTO_PATH).toString("base64");
-const EMBED_FONT_NAME = "EmbeddedNotoSansJP";
+const FONT_FILE = "MPLUSRounded1c-Medium.ttf";
+const FONT_SRC_PATH = path.join(__dirname, "../assets/fonts", FONT_FILE);
+const FONT_FAMILY = "M PLUS Rounded 1c";
+const TMP_FONT_DIR = "/tmp/custom-fonts";
+
+// フォントを /tmp にコピーして fontconfig に登録する（プロセス起動時に1回だけ実行）
+function setupFont(): void {
+  try {
+    const dest = path.join(TMP_FONT_DIR, FONT_FILE);
+    if (!fs.existsSync(dest)) {
+      fs.mkdirSync(TMP_FONT_DIR, { recursive: true });
+      fs.copyFileSync(FONT_SRC_PATH, dest);
+      fs.writeFileSync(
+        path.join(TMP_FONT_DIR, "fonts.conf"),
+        `<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<fontconfig>
+  <dir>/tmp/custom-fonts</dir>
+</fontconfig>`
+      );
+      execSync("fc-cache -f /tmp/custom-fonts", { stdio: "pipe" });
+    }
+    process.env.FONTCONFIG_PATH = TMP_FONT_DIR;
+  } catch (e) {
+    console.warn("[imageComposer] font setup failed:", e);
+  }
+}
+
+setupFont();
 
 type Align = "left" | "center" | "right";
 
@@ -61,7 +88,7 @@ function buildTextSvg(layer: TextLayer): Buffer {
     fontSize,
     lineHeight = 1.25,
     letterSpacing,
-    fontFamily = `${EMBED_FONT_NAME}, Noto Sans JP, Noto Sans CJK JP, Noto Sans, Arial, sans-serif`,
+    fontFamily = `"${FONT_FAMILY}", sans-serif`,
     fontWeight = 600,
     fill = "#111",
     align = "left",
@@ -99,14 +126,8 @@ function buildTextSvg(layer: TextLayer): Buffer {
   const svg = `
   <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
     <style>
-      @font-face {
-        font-family: '${EMBED_FONT_NAME}';
-        src: url(data:font/ttf;base64,${FONT_NOTO_B64}) format('truetype');
-        font-weight: 100 900;
-        font-style: normal;
-      }
       .t {
-        font-family: ${EMBED_FONT_NAME}, sans-serif;
+        font-family: ${fontFamily};
         font-size: ${fontSize}px;
         font-weight: ${fontWeight};
         fill: ${fill};
