@@ -43,8 +43,8 @@ export function TitlePage({ onSubmit }: TitlePageProps) {
 
         {/* タイトル & サブタイトル */}
         <div className="title-text-block">
-          <h1 className="title-main">❤️‍🔥 価値観カードゲーム 🌈✨</h1>
-          <p className="title-sub">あなたの人生における大切な要素を見つけよう！</p>
+          <h1 className="title-main">❤️‍🔥 留学価値観カードゲーム ✈️✨</h1>
+          <p className="title-sub">あなたの留学における大切な要素を見つけよう！</p>
         </div>
 
         {/* 中央付近：プレイヤー名入力 + モード選択ボタン */}

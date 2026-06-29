@@ -367,7 +367,7 @@ function App() {
   return (
     <div className="app-root">
       <header className="app-bar">
-        <div style={{ fontSize: "min(32px, 4vh, 5vw)", fontWeight: "bold" }}>❤️‍🔥 価値観カードゲーム</div>
+        <div style={{ fontSize: "min(32px, 4vh, 5vw)", fontWeight: "bold" }}>❤️‍🔥 留学価値観カードゲーム</div>
         {playerName && (
           <div style={{ fontSize: "1rem", fontWeight: "bold", opacity: 0.8}}>
             👤 {playerName}

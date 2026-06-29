@@ -218,7 +218,7 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
       <section className="result-header">
         <div className="result-header-main">🎉 結果発表 ✨</div>
         <div className="result-header-sub">
-          人生において大切な5つの価値観
+          あなたの留学における大切な5つの価値観
         </div>
       </section>
 

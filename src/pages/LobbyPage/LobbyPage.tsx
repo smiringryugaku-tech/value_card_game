@@ -39,7 +39,7 @@ export function LobbyPage({
     if (!roomCode) return;
   
     // 招待リンクをここで定義（パラメータ名は好きなので OK）
-    const inviteUrl = `「❤️‍🔥価値観カードゲーム」であなたの人生にとって大切な5つの価値観を一緒に見つけましょう！🌈✨\n\nゲームリンク：${window.location.origin}\nルームコード：${roomCode}`;
+    const inviteUrl = `「❤️‍🔥留学価値観カードゲーム」であなたの留学における大切な5つの価値観を一緒に見つけましょう！✈️✨\n\nゲームリンク：${window.location.origin}\nルームコード：${roomCode}`;
   
     try {
       await navigator.clipboard.writeText(inviteUrl);
