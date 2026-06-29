@@ -1,9 +1,9 @@
 // src/pages/ResultPage/ResultPage.tsx
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./ResultPage.css";
 import type { Room, Player, CardId } from "../../types";
 import { cardDict } from "../../utils/cardInfo";
-import { analyzeWithGemini } from "../../api/analyze";
+import { analyzeWithGemini, buildValueSheet } from "../../api/analyze";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "../../firebase";
 
@@ -13,7 +13,7 @@ type ResultPageProps = {
   room: Room;
   players: Player[];
   myPlayerId: string;
-  onPlayAgain: () => void; 
+  onPlayAgain: () => void;
 };
 
 function getCardName(cardId: CardId): string {
@@ -21,22 +21,65 @@ function getCardName(cardId: CardId): string {
   return info ? info.japanese : `カード ${cardId}`;
 }
 
+type AnalyzePhase = "idle" | "phase1" | "phase2" | "done" | "error";
+
+const PHASE1_MESSAGES = [
+  "AIがカードを読み取っています...",
+  "あなたの思考パターンを読み取っています…",
+  "留学価値観を分析しています…",
+];
+const PHASE2_MESSAGES = [
+  "分析結果をまとめています…",
+  "画像を生成しています…",
+  "留学タイプを分類しています…",
+];
+
 export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPageProps) {
   const [isNarrow, setIsNarrow] = useState(false);
-  type AnalyzeStatus = "idle" | "running" | "done" | "error";
-
-  const [analyzeStatus, setAnalyzeStatus] = useState<AnalyzeStatus>("idle");
-  const [analyzeMsg, setAnalyzeMsg] = useState<string | null>(null);
+  const [analyzePhase, setAnalyzePhase] = useState<AnalyzePhase>("idle");
+  const [analyzeErrorMsg, setAnalyzeErrorMsg] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [msgIndex, setMsgIndex] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [analysisImageUrl, setAnalysisImageUrl] = useState<string | null>(null);
   const [analysisImagePath, setAnalysisImagePath] = useState<string | null>(null);
   const [analysisText, setAnalysisText] = useState<string | null>(null);
+
   const roomId = (room as any).id ?? (room as any).code;
 
+  // progress bar fake increment
   useEffect(() => {
-    const update = () => {
-      setIsNarrow(window.innerWidth < 720);
-    };
+    if (analyzePhase !== "phase1" && analyzePhase !== "phase2") return;
+    const cap = analyzePhase === "phase1" ? 48 : 96;
+    const id = setInterval(() => {
+      setProgress((p) => {
+        if (p >= cap) return p;
+        return Math.min(cap, p + Math.max(0.4, (cap - p) * 0.05));
+      });
+    }, 400);
+    return () => clearInterval(id);
+  }, [analyzePhase]);
+
+  // message rotation
+  const msgIndexRef = useRef(0);
+  useEffect(() => {
+    if (analyzePhase !== "phase1" && analyzePhase !== "phase2") return;
+    msgIndexRef.current = 0;
+    setMsgIndex(0);
+    const id = setInterval(() => {
+      msgIndexRef.current = (msgIndexRef.current + 1) % 3;
+      setMsgIndex(msgIndexRef.current);
+    }, 2000);
+    return () => clearInterval(id);
+  }, [analyzePhase]);
+
+  useEffect(() => {
+    if (analyzePhase === "phase2") setProgress(50);
+    if (analyzePhase === "done") setProgress(100);
+  }, [analyzePhase]);
+
+  useEffect(() => {
+    const update = () => setIsNarrow(window.innerWidth < 720);
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
@@ -45,97 +88,83 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
   const myHand = (room.hands?.[myPlayerId] ?? []).slice(0, 5);
   const myPlayer = players.find((p) => p.id === myPlayerId);
   const myName = myPlayer?.name ?? "あなた";
-
   const otherPlayers = players.filter((p) => p.id !== myPlayerId);
 
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
-      // ここが true の時だけ警告したい（例: ゲーム中だけ）
-      const shouldWarn = true;
-      if (!shouldWarn) return;
-
       e.preventDefault();
-      // Chrome系では returnValue の文字は無視されることが多い
       e.returnValue = "";
     };
-
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, []);
 
   const handleAnalyze = async () => {
-    // すでに完了してたら、モーダルを開くだけ
-    if (analyzeStatus === "done" && analysisImageUrl) {
+    if (analyzePhase === "done" && analysisImageUrl) {
       setIsModalOpen(true);
       return;
     }
-  
+
     try {
-      setAnalyzeStatus("running");
-      setAnalyzeMsg("分析しています...（30〜60秒くらいかかることがあります）");
-  
-      // ここで callable 呼ぶ（例）
-      const data = await analyzeWithGemini(roomId, myPlayerId);
-  
-      setAnalysisImageUrl(data.imageUrl ?? null);
-      setAnalysisImagePath(data.imagePath ?? null);
-      setAnalysisText(data.result?.analysis ?? null);
-  
-      setAnalyzeStatus("done");
-      setAnalyzeMsg("分析が完了しました！「分析結果を見る」から確認できます。");
-      setIsModalOpen(true); // 完了したら自動で開くのも気持ちいい
+      setAnalyzeErrorMsg(null);
+      setProgress(0);
+      setAnalyzePhase("phase1");
+
+      // ステップ1: AI分析
+      const step1 = await analyzeWithGemini(roomId, myPlayerId);
+
+      if (step1.fromCache) {
+        setAnalysisImageUrl(step1.imageUrl);
+        setAnalysisImagePath(step1.imagePath);
+        setAnalyzePhase("done");
+        setIsModalOpen(true);
+        return;
+      }
+
+      // ステップ2: 画像生成
+      setAnalyzePhase("phase2");
+      const step2 = await buildValueSheet(roomId, myPlayerId, step1.stepData);
+
+      setAnalysisImageUrl(step2.imageUrl);
+      setAnalysisImagePath(step2.imagePath);
+      setAnalysisText(step2.result?.analysis ?? null);
+      setAnalyzePhase("done");
+      setIsModalOpen(true);
     } catch (e: any) {
       console.error(e);
-      setAnalyzeStatus("error");
-      setAnalyzeMsg("分析に失敗しました。もう一度お試しください。\n解決しない場合はカスタマーサポートにお問い合わせください。");
+      setAnalyzePhase("error");
+      setAnalyzeErrorMsg(
+        "分析に失敗しました。もう一度お試しください。\n解決しない場合はカスタマーサポートにお問い合わせください。"
+      );
     }
   };
 
+  const isRunning = analyzePhase === "phase1" || analyzePhase === "phase2";
   const analyzeButtonLabel =
-  analyzeStatus === "running" ? "分析中..." :
-  analyzeStatus === "done" ? "分析結果を見る" :
-  analyzeStatus === "error" ? "再試行" :
-  "AI分析";
+    isRunning ? "分析中..." :
+    analyzePhase === "done" ? "分析結果を見る" :
+    analyzePhase === "error" ? "再試行" :
+    "AI分析";
 
-  const analyzeButtonDisabled = analyzeStatus === "running";
+  const currentMessage =
+    analyzePhase === "phase1" ? PHASE1_MESSAGES[msgIndex] :
+    analyzePhase === "phase2" ? PHASE2_MESSAGES[msgIndex] :
+    null;
 
   const handleDownload = async () => {
     try {
-      console.log("[DL] start", { analysisImagePath, roomId, myPlayerId });
-  
-      if (!analysisImagePath) {
-        console.warn("[DL] no analysisImagePath");
-        return;
-      }
-  
+      if (!analysisImagePath) return;
       const filename = `value_sheet_${roomId}_${myPlayerId}.png`;
-      console.log("[DL] calling getValueSheetDownloadUrl", { imagePath: analysisImagePath, filename });
-  
       const res = await getDownloadUrlFn({ imagePath: analysisImagePath, filename });
-  
-      console.log("[DL] callable raw res", res);
-      console.log("[DL] callable res.data", res.data);
-  
       const url = (res.data as any)?.url as string | undefined;
       if (!url) throw new Error("download url missing");
-  
-      console.log("[DL] url", url);
-  
-      // ブロックされると null が返ることが多い
       const w = window.open(url, "_blank", "noopener,noreferrer");
-      console.log("[DL] window.open result", w);
-  
-      if (!w) {
-        console.warn("[DL] window.open blocked; fallback to same-tab redirect");
-        window.location.assign(url);
-      }
+      if (!w) window.location.assign(url);
     } catch (e) {
       console.error("[DL] failed", e);
       alert(String(e));
     }
   };
-  
-  
 
   const mySlots: Array<CardId | null> = Array.from(
     { length: 5 },
@@ -149,14 +178,9 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
       "result-my-card-slot",
       variant === "single" ? "result-my-card-slot--single" : "",
       cardId == null ? "result-my-card-slot--empty" : "",
-    ]
-      .filter(Boolean)
-      .join(" ");
-  
-    if (cardId == null) {
-      return <div key={key} className={baseClass} />;
-    }
-  
+    ].filter(Boolean).join(" ");
+
+    if (cardId == null) return <div key={key} className={baseClass} />;
     return (
       <div key={key} className={baseClass}>
         <div className="result-my-card-text">{getCardName(cardId)}</div>
@@ -164,20 +188,14 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
     );
   };
 
-  // ★ 他プレイヤー用のカードスロット描画（少し小さめ）
   const renderOtherSlot = (cardId: CardId | null, key: string, variant: SlotVariant) => {
     const baseClass = [
       "result-other-card-slot",
-      variant === "single" ? "result-other-card-slot--single": "",
+      variant === "single" ? "result-other-card-slot--single" : "",
       cardId == null ? "result-other-card-slot--empty" : "",
-    ]
-      .filter(Boolean)
-      .join(" ");
+    ].filter(Boolean).join(" ");
 
-    if (cardId == null) {
-      return <div key={key} className={baseClass} />;
-    }
-
+    if (cardId == null) return <div key={key} className={baseClass} />;
     return (
       <div key={key} className={baseClass}>
         <div className="result-other-card-text">{getCardName(cardId)}</div>
@@ -187,33 +205,39 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
 
   return (
     <div className="result-root">
-      {/* 上部のボタン＋ヘッダー */}
       <div className="result-actions-row">
-        <button
-          type="button"
-          className="result-btn result-btn-primary"
-          onClick={onPlayAgain}
-        >
+        <button type="button" className="result-btn result-btn-primary" onClick={onPlayAgain}>
           もう一度遊ぶ
         </button>
         <button
           type="button"
           className="result-btn result-btn-secondary"
           onClick={handleAnalyze}
-          disabled={analyzeButtonDisabled}
+          disabled={isRunning}
         >
-          {analyzeStatus === "running" && <span className="mini-spinner" />}
+          {isRunning && <span className="mini-spinner" />}
           {analyzeButtonLabel}
         </button>
       </div>
 
-      <div className="analyze-msg-container">
-        {analyzeMsg && (
-          <div className={`analyze-msg analyze-msg--${analyzeStatus}`}>
-            {analyzeMsg}
+      {/* プログレスバー + メッセージ */}
+      {(isRunning || analyzePhase === "done") && (
+        <div className="analyze-progress-container">
+          <div className="analyze-progress-bar-track">
+            <div
+              className="analyze-progress-bar-fill"
+              style={{ width: `${progress}%` }}
+            />
           </div>
-        )}
-      </div>
+          {currentMessage && (
+            <div className="analyze-progress-message">{currentMessage}</div>
+          )}
+        </div>
+      )}
+
+      {analyzePhase === "error" && analyzeErrorMsg && (
+        <div className="analyze-msg analyze-msg--error">{analyzeErrorMsg}</div>
+      )}
 
       <section className="result-header">
         <div className="result-header-main">🎉 結果発表 ✨</div>
@@ -222,7 +246,6 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
         </div>
       </section>
 
-      {/* ★ 自分の価値観（2 段固定レイアウト） */}
       <section className="result-my-values">
         <div className="result-my-panel">
           <div className="result-my-title">
@@ -230,7 +253,6 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
           </div>
 
           {isNarrow ? (
-            // 2列（3 + 2）
             <div className="result-my-card-rows">
               <div className="result-my-card-row">
                 {mySlots.slice(0, 3).map((cardId, idx) =>
@@ -244,7 +266,6 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
               </div>
             </div>
           ) : (
-            // 1列5枚
             <div className="result-my-card-row result-my-card-row--single">
               {mySlots.map((cardId, idx) =>
                 renderSlot(cardId, `single-${idx}`, "single")
@@ -254,7 +275,6 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
         </div>
       </section>
 
-      {/* ★ 他プレイヤーもカードで表示 */}
       <section className="result-others">
         <div className="result-section-title">他のプレイヤーの価値観</div>
         <div className="result-others-scroll">
@@ -264,16 +284,12 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
               { length: 5 },
               (_, i) => hand[i] ?? null
             );
-
             return (
               <div key={p.id} className="result-other-column">
                 <div className="result-other-header">
                   <strong className="result-other-name">{p.name}</strong>
-                  <span className="result-other-header-suffix">
-                    の価値観
-                  </span>
+                  <span className="result-other-header-suffix">の価値観</span>
                 </div>
-
                 <div className="result-other-cards">
                   {isNarrow ? (
                     <>
@@ -301,7 +317,9 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
           })}
         </div>
       </section>
-      <div className="bottom-spacer"/>
+
+      <div className="bottom-spacer" />
+
       {isModalOpen && (
         <div className="modal-backdrop" onClick={() => setIsModalOpen(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -317,14 +335,13 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
             )}
 
             <div className="modal-actions">
-            <button
-              className="result-btn result-btn-primary"
-              onClick={handleDownload}
-              disabled={!analysisImagePath}
-            >
-              ダウンロード
-            </button>
-
+              <button
+                className="result-btn result-btn-primary"
+                onClick={handleDownload}
+                disabled={!analysisImagePath}
+              >
+                ダウンロード
+              </button>
               <button
                 className="result-btn result-btn-secondary"
                 onClick={() => setIsModalOpen(false)}

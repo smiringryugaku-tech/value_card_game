@@ -97,9 +97,10 @@ export const getValueSheetDownloadUrl = onCall(async (req) => {
   return { url };
 });
 
-export const analyzeWithGemini = onCall({ 
+// ステップ1: Gemini AI分析 + 軸スコア計算
+export const analyzeWithGemini = onCall({
   secrets: [GEMINI_API_KEY],
-  memory: "1GiB",
+  memory: "512MiB",
   timeoutSeconds: 60,
   concurrency: 1,
   maxInstances: 6,
@@ -115,14 +116,9 @@ export const analyzeWithGemini = onCall({
       playerId: String(playerId),
       withinMs: 60 * 60 * 1000,
     });
-    
+
     if (cached) {
-      return {
-        fromCache: true,
-        imageUrl: cached.url,
-        imagePath: cached.path,
-        ageMinutes: Math.round(cached.ageMs / 60000),
-      };
+      return { fromCache: true, imageUrl: cached.url, imagePath: cached.path };
     }
 
     const roomSnap = await db.collection("rooms").doc(String(roomId)).get();
@@ -138,6 +134,7 @@ export const analyzeWithGemini = onCall({
 
     const playerName = String(player.name ?? "Player");
     const joinedAtISO = toISODateTime(player.joinedAt);
+    const dateText = joinedAtISO.slice(0, 10);
 
     const finalHandCardIds = (room?.hands?.[playerId] ?? []).slice(0, 5);
     if (!Array.isArray(finalHandCardIds) || finalHandCardIds.length !== 5) {
@@ -151,41 +148,22 @@ export const analyzeWithGemini = onCall({
 
     const scoreMap = scoreDiscardLogsSorted(discardLogs, { combine: "last" });
     const discardScores = Array.from(scoreMap.entries()).map(([cardId, score]) => ({ cardId, score }));
-    console.log("🧮 Discard Scores:", discardScores, " 🧮");
 
     const apiKey = process.env.GEMINI_API_KEY_EMU || GEMINI_API_KEY.value();
     if (!apiKey) throw new HttpsError("failed-precondition", "GEMINI_API_KEY missing");
-    console.log("🔑 GEMINI_API_KEY length:", (process.env.GEMINI_API_KEY_EMU || GEMINI_API_KEY.value() || "").length, " 🔑");
-
 
     const result = await runGeminiAnalysis(apiKey, playerName, finalHandCardIds, discardScores);
 
     const axisRes = computeAxisScores(
-      {
-        finalHandCardIds,
-        discardScores,
-      },
-      {
-        alpha: 0.35,
-        compress: "log1p",
-        excludeFinalFromDiscard: true,
-        confidenceTargetAbs: 60,
-      }
+      { finalHandCardIds, discardScores },
+      { alpha: 0.35, compress: "log1p", excludeFinalFromDiscard: true, confidenceTargetAbs: 60 }
     );
-    
-    // スコアを反転（score100は左極=100なので、右極が高いほど大きい値にする）
+
     const valueTypeScores = (["CL", "CS", "UN", "IT"] as const).map(
       (ax) => 100 - axisRes[ax].score100
     );
-
     const [CL, CS, UN, IT] = valueTypeScores;
-
-    const cl = CL >= 50 ? "L" : "C";
-    const cs = CS >= 50 ? "S" : "C";
-    const un = UN >= 50 ? "N" : "U";
-    const it = IT >= 50 ? "T" : "I";
-
-    const valueTypeAlphabet = `${cl}${cs}${un}${it}`;
+    const valueTypeAlphabet = `${CL >= 50 ? "L" : "C"}${CS >= 50 ? "S" : "C"}${UN >= 50 ? "N" : "U"}${IT >= 50 ? "T" : "I"}`;
 
     const typeNames: Record<string, string> = {
       CCUI: "アントレプレナー", CCUT: "リーダー",
@@ -198,37 +176,72 @@ export const analyzeWithGemini = onCall({
       LSNI: "ヒーラー",        LSNT: "ゲスト",
     };
     const typeGroups: Record<string, string> = {
-      CC: "開拓タイプ", CS: "堅実タイプ",
-      LC: "変革タイプ", LS: "満喫タイプ",
+      CC: "開拓タイプ", CS: "堅実タイプ", LC: "変革タイプ", LS: "満喫タイプ",
     };
-
     const typeName = typeNames[valueTypeAlphabet] ?? "留学タイプ";
     const typeGroup = typeGroups[valueTypeAlphabet.slice(0, 2)] ?? "";
+    const typeLabel = `${typeGroup}\n${typeName}`;
 
     const finalHandCardNames = finalHandCardIds.map(
       (id) => cardDict[id]?.japanese ?? `カード ${id}`
     );
 
-    const analysisText = result.analysis;
+    return {
+      fromCache: false,
+      stepData: {
+        analysis: result.analysis,
+        valueTypeAlphabet,
+        typeLabel,
+        valueTypeScores,
+        finalHandCardIds,
+        finalHandCardNames,
+        playerName,
+        dateText,
+      },
+    };
+  } catch (err: any) {
+    logger.error("analyzeWithGemini failed", err);
+    if (err?.code && err instanceof HttpsError) throw err;
+    throw new HttpsError("internal", err?.message ?? "Unknown error");
+  }
+});
+
+// ステップ2: 画像生成・アップロード
+export const buildValueSheet = onCall({
+  memory: "1GiB",
+  timeoutSeconds: 60,
+  concurrency: 1,
+  maxInstances: 6,
+}, async (req) => {
+  try {
+    const { roomId, playerId, stepData } = req.data ?? {};
+    if (!roomId || !playerId || !stepData) {
+      throw new HttpsError("invalid-argument", "roomId, playerId, stepData are required");
+    }
+
+    const {
+      analysis,
+      valueTypeAlphabet,
+      typeLabel,
+      valueTypeScores,
+      finalHandCardIds,
+      finalHandCardNames,
+      playerName,
+      dateText,
+    } = stepData;
 
     const TEMPLATE_PATH = "assets/templates/value_sheet_base_temp.png";
-    const bucket = getStorage().bucket();
-    // const [baseBuf] = await bucket.file(TEMPLATE_PATH).download();
-    // const meta = await sharp(baseBuf).metadata();
-    // const W = meta.width ?? 0;
-    // const H = meta.height ?? 0;
-
     const W = 1350;
     const H = 2400;
 
     const spec = makeValueSheetSpec({
       templatePath: TEMPLATE_PATH,
       playerName,
-      dateText: joinedAtISO.slice(0, 10),
+      dateText,
       finalHandCardIds,
-      analysisText,
+      analysisText: analysis,
       finalHandCardNames,
-      valueType: [valueTypeAlphabet, `${typeGroup}\n${typeName}`],
+      valueType: [valueTypeAlphabet, typeLabel],
       valueTypeScores,
       canvasWidth: W,
       canvasHeight: H,
@@ -236,22 +249,17 @@ export const analyzeWithGemini = onCall({
 
     const outBuf = await composeImage(spec);
 
+    const bucket = getStorage().bucket();
     const outPath = `generated/valueSheets/${roomId}/${playerId}/your_value_${Date.now()}.png`;
     const file = bucket.file(outPath);
-
     await file.save(outBuf, { contentType: "image/png", resumable: false });
 
-    // Admin SDK で “non-expiring download URL” を取れる（公式）
     const url = await getDownloadURL(file);
 
-    return { result, imageUrl: url, imagePath: outPath };
+    return { imageUrl: url, imagePath: outPath, result: { analysis } };
   } catch (err: any) {
-    logger.error("analyzeWithGemini failed", err);
-
-    // すでに HttpsError ならそのまま返す
+    logger.error("buildValueSheet failed", err);
     if (err?.code && err instanceof HttpsError) throw err;
-
-    // それ以外は INTERNAL にまとめつつ、メッセージだけは残す
     throw new HttpsError("internal", err?.message ?? "Unknown error");
   }
 });
