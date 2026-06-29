@@ -139,10 +139,19 @@
   background-color: rgba(255, 255, 255, 0.4);
 }
 
-.result-my-card-image {
+.result-my-card-text {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4px;
+  font-size: clamp(8px, 1.0vw, 12px);
+  font-weight: 700;
+  color: #4a2f16;
+  line-height: 1.3;
+  word-break: break-all;
 }
 
 /* 1列5枚用（横幅広いとき） */
@@ -278,10 +287,19 @@
 }
 
 /* カード画像 */
-.result-other-card-image {
+.result-other-card-text {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3px;
+  font-size: clamp(7px, 0.85vw, 11px);
+  font-weight: 600;
+  color: #4a2f16;
+  line-height: 1.3;
+  word-break: break-all;
 }
 
 /* スマホでは少し小さめに */

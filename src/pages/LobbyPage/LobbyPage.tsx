@@ -185,7 +185,7 @@ export function LobbyPage({
           <input
             type="range"
             min={20}
-            max={94}
+            max={70}
             step={1}
             value={cardCount}
             onChange={handleSliderChange}
@@ -194,7 +194,7 @@ export function LobbyPage({
 
           <div className="lobby-card-slider-scale">
             <span>20</span>
-            <span>94</span>
+            <span>70</span>
           </div>
 
           <button

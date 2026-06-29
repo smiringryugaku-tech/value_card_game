@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import "./ResultPage.css";
 import type { Room, Player, CardId } from "../../types";
-import { cardDict, getCardImageUrl } from "../../utils/cardInfo";
+import { cardDict } from "../../utils/cardInfo";
 import { analyzeWithGemini } from "../../api/analyze";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "../../firebase";
@@ -16,10 +16,9 @@ type ResultPageProps = {
   onPlayAgain: () => void; 
 };
 
-function getCardTexts(cardId: CardId) {
+function getCardName(cardId: CardId): string {
   const info = (cardDict as any)[cardId];
-  if (!info) return { jp: `カード ${cardId}`, en: "" };
-  return { jp: info.japanese, en: info.english };
+  return info ? info.japanese : `カード ${cardId}`;
 }
 
 export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPageProps) {
@@ -158,15 +157,9 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
       return <div key={key} className={baseClass} />;
     }
   
-    const { jp } = getCardTexts(cardId);
-  
     return (
       <div key={key} className={baseClass}>
-        <img
-          src={getCardImageUrl(cardId)}
-          alt={jp || `カード ${cardId}`}
-          className="result-my-card-image"
-        />
+        <div className="result-my-card-text">{getCardName(cardId)}</div>
       </div>
     );
   };
@@ -185,15 +178,9 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
       return <div key={key} className={baseClass} />;
     }
 
-    const { jp } = getCardTexts(cardId);
-
     return (
       <div key={key} className={baseClass}>
-        <img
-          src={getCardImageUrl(cardId)}
-          alt={jp || `カード ${cardId}`}
-          className="result-other-card-image"
-        />
+        <div className="result-other-card-text">{getCardName(cardId)}</div>
       </div>
     );
   };

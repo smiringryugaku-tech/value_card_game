@@ -5,6 +5,7 @@ export function makeValueSheetSpec(params: {
   playerName: string;
   dateText: string;      // "2025.11.27"
   finalHandCardIds: Array<number>;
+  finalHandCardNames: Array<string>;
   analysisText: string;  // すでに \n 入り
   valueType: Array<string>;
   valueTypeScores: Array<number>;
@@ -19,21 +20,24 @@ export function makeValueSheetSpec(params: {
   const CARD_TOP = 604;
   const CARD_LEFT_START = 47;
   const CARD_GAP = (W - (CARD_LEFT_START * 2 + CARD_WIDTH * 5)) / 4;
-  const CARD_BORDER_RAD = 30;
-
   const lines = params.analysisText.split(/\r?\n/).filter(line => line.trim() !== "");
   const lineCount = lines.length;
 
-  const cardLayers = params.finalHandCardIds.slice(0, 5).map((cardId, index) => {
+  const cardLayers = params.finalHandCardNames.slice(0, 5).map((cardName, index) => {
     return {
-      type: "image" as const,
-      gsPath: `assets/cards/temporary/card_${String(cardId).padStart(2, "0")}.png`,
+      type: "text" as const,
+      text: cardName,
       left: Math.round(CARD_LEFT_START + index * (CARD_WIDTH + CARD_GAP)),
-      top: CARD_TOP,
+      top: CARD_TOP + Math.round(CARD_HEIGHT / 2) - 40,
       width: CARD_WIDTH,
       height: CARD_HEIGHT,
-      fit: "cover" as const,
-      borderRadius: CARD_BORDER_RAD,
+      fontSize: 24,
+      lineHeight: 1.5,
+      align: "center" as const,
+      fill: "#4a2f16",
+      stroke: "#ffffff",
+      strokeWidth: 4,
+      fontWeight: 700,
     };
   });
 
@@ -44,7 +48,7 @@ export function makeValueSheetSpec(params: {
   const KNOB_TOP = 1724;
   const KNOB_GAP = 125;
 
-  const labels = [["リスク姿勢", "E", "S"], ["関係志向", "A", "C"], ["幸福観", "D", "W"], ["意思決定", "L", "I"]];
+  const labels = [["目的軸", "C", "L"], ["スタンス軸", "C", "S"], ["環境軸", "U", "N"], ["行動軸", "I", "T"]];
   const sliderLabelLayers = params.valueTypeScores.slice(0, 4).map((score, index) => {
     return {
       type: "text" as const,

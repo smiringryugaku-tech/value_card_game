@@ -2,7 +2,7 @@ import type { CardId } from "../types";
 
 export function createShuffledDeck(cardCount: number): CardId[] {
   const deck: CardId[] = [];
-  for (let i = 0; i < 94; i++) {
+  for (let i = 0; i < 70; i++) {
     deck.push(i);
   }
   return shuffle(deck).slice(0, cardCount);

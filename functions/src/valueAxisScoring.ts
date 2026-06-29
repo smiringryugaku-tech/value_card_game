@@ -1,12 +1,11 @@
 import { cardDict } from "./utils/cardInfo";
 
-export type Axis = "ES" | "AC" | "DW" | "LI";
-export type Pole = "E" | "S" | "A" | "C" | "D" | "W" | "L" | "I";
+export type Axis = "CL" | "CS" | "UN" | "IT";
+export type Pole = "C" | "L" | "S" | "U" | "N" | "I" | "T";
 
 export type CardAxisScore = { axis: Axis; pole: Pole; score: number };
 export type CardInfo = {
   japanese: string;
-  english: string;
   axisScores: CardAxisScore[];
 };
 
@@ -48,8 +47,8 @@ export type ComputeAxisScoresOptions = {
   eps?: number;
 };
 
-const AXES: Axis[] = ["ES", "AC", "DW", "LI"];
-const LEFT_POLE: Record<Axis, Pole> = { ES: "E", AC: "A", DW: "D", LI: "L" };
+const AXES: Axis[] = ["CL", "CS", "UN", "IT"];
+const LEFT_POLE: Record<Axis, Pole> = { CL: "C", CS: "C", UN: "U", IT: "I" };
 
 function clamp(x: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, x));

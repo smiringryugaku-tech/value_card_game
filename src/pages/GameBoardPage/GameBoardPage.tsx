@@ -3,7 +3,7 @@ import type { CardId, Player, Room } from "../../types";
 import { useEffect, useState } from "react";
 import "./GameBoardPage.css";
 // パスはあなたのプロジェクトに合わせて変えてね
-import { cardDict, getCardImageUrl } from "../../utils/cardInfo";
+import { cardDict } from "../../utils/cardInfo";
 
 type GameBoardPageProps = {
   room: Room;
@@ -16,10 +16,9 @@ type GameBoardPageProps = {
   onTimerSetting: (seconds: number | null)=> void;
 };
 
-function getCardTexts(cardId: CardId) {
+function getCardName(cardId: CardId): string {
   const info = (cardDict as any)[cardId];
-  if (!info) return { jp: `カード ${cardId}`, en: "" };
-  return { jp: info.japanese, en: info.english };
+  return info ? info.japanese : `カード ${cardId}`;
 }
 
 export function GameBoardPage({
@@ -271,7 +270,7 @@ export function GameBoardPage({
                           .map((cardId, index) => ({ cardId, originalIndex: index }))
                           .reverse()
                           .map(({ cardId, originalIndex }) => {
-                        const { jp, en } = getCardTexts(cardId);
+                        const cardName = getCardName(cardId);
                         const canPick = canDraw && playerDiscards.length > 0;
 
                         return (
@@ -284,10 +283,7 @@ export function GameBoardPage({
                             }
                             disabled={!canPick}
                           >
-                            <div className="gb-discard-card-jp">{jp}</div>
-                            {en && (
-                              <div className="gb-discard-card-en">{en}</div>
-                            )}
+                            <div className="gb-discard-card-jp">{cardName}</div>
                           </button>
                         );
                       })}
@@ -338,20 +334,10 @@ export function GameBoardPage({
                 onClick={() => onDiscard(cardId)}
                 disabled={!canDiscard}
               >
-                <img
-                  src={getCardImageUrl(cardId)}
-                  alt={`カード ${cardId}`}
-                  className="gb-hand-card-image"
-                />
-                {/* 捨てフェーズのときだけ赤エフェクト＋ゴミ箱を重ねる */}
+                <div className="gb-hand-card-text">{getCardName(cardId)}</div>
+                {/* 捨てフェーズのときだけ赤エフェクト */}
                 {canDiscard && (
-                  <div className="gb-hand-card-overlay">
-                    <img
-                      src="/images/trash.png"
-                      alt=""
-                      className="gb-hand-card-trash-icon"
-                    />
-                  </div>
+                  <div className="gb-hand-card-overlay" />
                 )}
               </button>
             </div>

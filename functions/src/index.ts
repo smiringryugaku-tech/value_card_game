@@ -173,19 +173,41 @@ export const analyzeWithGemini = onCall({
       }
     );
     
-    // あなたのUIは「E/A/D/Lが0、反対が100」なので反転
-    const valueTypeScores = (["ES", "AC", "DW", "LI"] as const).map(
+    // スコアを反転（score100は左極=100なので、右極が高いほど大きい値にする）
+    const valueTypeScores = (["CL", "CS", "UN", "IT"] as const).map(
       (ax) => 100 - axisRes[ax].score100
     );
 
-    const [ES, AC, DW, LI] = valueTypeScores;
+    const [CL, CS, UN, IT] = valueTypeScores;
 
-    const es = ES >= 50 ? "S" : "E";
-    const ac = AC >= 50 ? "C" : "A";
-    const dw = DW >= 50 ? "W" : "D";
-    const li = LI >= 50 ? "I" : "L";
+    const cl = CL >= 50 ? "L" : "C";
+    const cs = CS >= 50 ? "S" : "C";
+    const un = UN >= 50 ? "N" : "U";
+    const it = IT >= 50 ? "T" : "I";
 
-    const valueTypeAlphabet = `${es}${ac}${dw}${li}`;
+    const valueTypeAlphabet = `${cl}${cs}${un}${it}`;
+
+    const typeNames: Record<string, string> = {
+      CCUI: "アントレプレナー", CCUT: "リーダー",
+      CCNI: "リサーチャー",    CCNT: "パイオニア",
+      CSUI: "ストラテジスト",  CSUT: "マネージャー",
+      CSNI: "スペシャリスト",  CSNT: "ワーカー",
+      LCUI: "アーティスト",    LCUT: "インフルエンサー",
+      LCNI: "バックパッカー",  LCNT: "エクスプローラー",
+      LSUI: "ソロツアラー",    LSUT: "プロデューサー",
+      LSNI: "ヒーラー",        LSNT: "ゲスト",
+    };
+    const typeGroups: Record<string, string> = {
+      CC: "開拓タイプ", CS: "堅実タイプ",
+      LC: "変革タイプ", LS: "満喫タイプ",
+    };
+
+    const typeName = typeNames[valueTypeAlphabet] ?? "留学タイプ";
+    const typeGroup = typeGroups[valueTypeAlphabet.slice(0, 2)] ?? "";
+
+    const finalHandCardNames = finalHandCardIds.map(
+      (id) => cardDict[id]?.japanese ?? `カード ${id}`
+    );
 
     const analysisText = result.analysis;
 
@@ -205,7 +227,8 @@ export const analyzeWithGemini = onCall({
       dateText: joinedAtISO.slice(0, 10),
       finalHandCardIds,
       analysisText,
-      valueType: [valueTypeAlphabet, "仲良しな\nアンパンマン"],
+      finalHandCardNames,
+      valueType: [valueTypeAlphabet, `${typeGroup}\n${typeName}`],
       valueTypeScores,
       canvasWidth: W,
       canvasHeight: H,

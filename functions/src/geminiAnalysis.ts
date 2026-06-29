@@ -90,14 +90,14 @@ export async function runGeminiAnalysis(
   const finalHandCards = finalCardsId.map(
     (id) => {
       const c = cardDict[id];
-      return c ? `${cardDict[id].japanese} (${cardDict[id].english})` : `カード ${id}`;
+      return c ? c.japanese : `カード ${id}`;
     }
   );
 
   const discardScores = scoreDiscardLogs.map(
     ({cardId, score}) => {
       const c = cardDict[cardId];
-      return {card: c ? `${c.japanese} (${c.english})` : `カード ${cardId}`, score};
+      return {card: c ? c.japanese : `カード ${cardId}`, score};
     }
   );
 
