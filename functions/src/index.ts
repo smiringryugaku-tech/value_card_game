@@ -159,11 +159,11 @@ export const analyzeWithGemini = onCall({
       { alpha: 0.35, compress: "log1p", excludeFinalFromDiscard: true, confidenceTargetAbs: 60 }
     );
 
-    const valueTypeScores = (["CL", "CS", "UN", "IT"] as const).map(
+    const valueTypeScores = (["CL", "AS", "UN", "IT"] as const).map(
       (ax) => 100 - axisRes[ax].score100
     );
-    const [CL, CS, UN, IT] = valueTypeScores;
-    const valueTypeAlphabet = `${CL >= 50 ? "L" : "C"}${CS >= 50 ? "S" : "C"}${UN >= 50 ? "N" : "U"}${IT >= 50 ? "T" : "I"}`;
+    const [CL, AS, UN, IT] = valueTypeScores;
+    const valueTypeAlphabet = `${CL >= 50 ? "L" : "C"}${AS >= 50 ? "S" : "C"}${UN >= 50 ? "N" : "U"}${IT >= 50 ? "T" : "I"}`;
 
     const typeNames: Record<string, string> = {
       CCUI: "アントレプレナー", CCUT: "リーダー",

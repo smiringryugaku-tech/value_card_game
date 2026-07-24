@@ -3,7 +3,7 @@ import type { CardId, Player, Room } from "../../types";
 import { useEffect, useState } from "react";
 import "./GameBoardPage.css";
 // パスはあなたのプロジェクトに合わせて変えてね
-import { cardDict } from "../../utils/cardInfo";
+import { cardDict, getCardImageUrl } from "../../utils/cardInfo";
 
 type GameBoardPageProps = {
   room: Room;
@@ -220,7 +220,7 @@ export function GameBoardPage({
                 disabled={!canDraw || deckCount === 0}
               >
                 <img
-                  src="/images/deck.png"          // ★ 山札画像（好きなパスに変えてOK）
+                  src="/images/deck_ryugakusai.png"          // ★ 山札画像（好きなパスに変えてOK）
                   alt="山札"
                   className="gb-deck-image"
                 />
@@ -334,7 +334,12 @@ export function GameBoardPage({
                 onClick={() => onDiscard(cardId)}
                 disabled={!canDiscard}
               >
-                <div className="gb-hand-card-text">{getCardName(cardId)}</div>
+                <img
+                  src={getCardImageUrl(cardId)}
+                  alt={getCardName(cardId)}
+                  className="gb-hand-card-image"
+                  draggable={false}
+                />
                 {/* 捨てフェーズのときだけ赤エフェクト */}
                 {canDiscard && (
                   <div className="gb-hand-card-overlay" />

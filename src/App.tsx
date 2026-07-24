@@ -29,7 +29,7 @@ function App() {
 
   const [isHost, setIsHost] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
-  const [cardCount, setCardCount] = useState(70);
+  const [cardCount, setCardCount] = useState(62);
   const [room, setRoom] = useState<Room | null>(null);
   const cardFromRef = useRef<CardFrom>("deck");
 

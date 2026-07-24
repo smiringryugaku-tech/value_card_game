@@ -1,10 +1,8 @@
 import type { CardId } from "../types";
+import { cardDict } from "../utils/cardInfo";
 
 export function createShuffledDeck(cardCount: number): CardId[] {
-  const deck: CardId[] = [];
-  for (let i = 0; i < 70; i++) {
-    deck.push(i);
-  }
+  const deck: CardId[] = Object.keys(cardDict).map(Number);
   return shuffle(deck).slice(0, cardCount);
 }
 

@@ -226,13 +226,13 @@
 
 @media (max-width: 719px) {
   .gb-deck-panel {
-    /* ★ 画面幅をちゃんと使う */
     width: 100%;
     max-width: none;
-    flex-direction: row;          /* 3ブロックを横並びに */
+    flex-direction: row;
     align-items: center;
-    justify-content: center;
-    gap: 4rem;
+    justify-content: flex-start;
+    gap: 1rem;
+    padding: 0.3rem 0.5rem;
   }
 
   .gb-deck-labels {
@@ -242,9 +242,21 @@
     align-items: flex-start;
   }
 
+  .gb-deck-title {
+    font-size: 1.05rem;
+  }
+
+  .gb-deck-count {
+    font-size: 0.85rem;
+  }
+
   .gb-deck-image-wrapper {
-    width: min(180px, 20vw);   /* ここで横幅を固定寄りに */
-    aspect-ratio: 4 / 2.9;     /* 縦長のままならこのままでOK */
+    flex: 0 0 auto;
+    width: min(90px, 26vw);
+    max-width: 90px;
+    margin-top: 0;
+    aspect-ratio: 4 / 2.9;
+    border-radius: 6px;
   }
 
   .gb-deck-helper {
@@ -254,7 +266,7 @@
   }
 
   .gb-deck-image {
-    transform: rotate(90deg) scale(1.4);      /* ★ 画像を 90 度回転 */
+    transform: rotate(90deg) scale(1.1);
     transform-origin: center center;
   }
 }
@@ -294,7 +306,7 @@
 
 @media (max-width: 719px) {
   .gb-deck-hand-icon {
-    height: 50px;
+    height: 26px;
     width: auto;
   }
 
@@ -358,9 +370,8 @@
 /* プレイヤーごとの捨て札カラム */
 
 .gb-discard-column {
-  min-width: 180px;
-  max-width: 260px;
-  flex: 0 0 auto;
+  width: 140px;
+  flex: 0 0 140px;
   border-radius: 10px;
   background-color: #fdfaf5;
   border: 1px solid rgba(0, 0, 0, 0.06);
@@ -502,13 +513,15 @@
     calc(20vh * 5 / 6)
   );
   aspect-ratio: 5 / 6;   /* ここで常に 5:6 を保証 */
-  border-radius: 10px;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 /* 中身がないスロット（枠だけ表示） */
 .gb-hand-card-slot--empty {
   border: 1px dashed rgba(0, 0, 0, 0.15);
   background-color: rgba(255, 255, 255, 0.4);
+  border-radius: 12px;
 }
 
 /* カードの実体（中身のボタン） */
@@ -520,6 +533,7 @@
   padding: 0;
   cursor: pointer;
   overflow: hidden;
+  border-radius: 12px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -548,6 +562,15 @@
   pointer-events: none;
 }
 
+.gb-hand-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 12px;
+  pointer-events: none;
+  user-select: none;
+}
+
 /* 捨てフェーズ時のオーバーレイ */
 .gb-hand-card-overlay {
   position: absolute;
@@ -559,6 +582,7 @@
   opacity: 0;
   transition: opacity 0.18s ease-out;
   pointer-events: none;
+  border-radius: 12px;
 }
 
 .gb-hand-card-trash-icon {
@@ -572,31 +596,39 @@
   opacity: 0.8;
 }
 
-/* ===== 幅の狭い画面（スマホなど）は 3×2 の grid ＋左右に余白 ===== */
+/* ===== 幅の狭い画面（スマホなど）は横幅に収まる 1 段で表示 ===== */
 @media (max-width: 650px) {
-  /* 手札ゾーン全体は 40% くらいまで使う */
   .gb-hand-zone {
-    flex: 0 0 40%;
-    padding-inline: 0.5rem;
+    flex: 0 0 22%;
+    min-height: 90px;
+    padding-inline: 0.35rem;
   }
 
-  /* flex → grid に切り替え */
   .gb-hand-cards-row {
-    display: grid;
-    grid-template-columns: repeat(3, auto);
+    display: flex;
+    flex-wrap: nowrap;
     justify-content: center;
-    column-gap: 0.4rem;
-    row-gap: 0.4rem;
-    align-content: center;
+    align-items: center;
+    gap: 0.25rem;
   }
 
   .gb-hand-card-slot {
-    width: min(
-      22vw,
-      calc(18vh * 5 / 6)
-    );
+    flex: 0 0 auto;
+    width: calc((100% - 5 * 0.25rem) / 6);
     aspect-ratio: 5 / 6;
-    border-radius: 10px;
+    border-radius: 8px;
+  }
+
+  .gb-hand-card-button {
+    border-radius: 8px;
+  }
+
+  .gb-hand-card-image {
+    border-radius: 8px;
+  }
+
+  .gb-hand-card-overlay {
+    border-radius: 8px;
   }
 }
 
