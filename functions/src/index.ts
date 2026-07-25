@@ -163,20 +163,20 @@ export const analyzeWithGemini = onCall({
       (ax) => 100 - axisRes[ax].score100
     );
     const [CL, AS, UN, IT] = valueTypeScores;
-    const valueTypeAlphabet = `${CL >= 50 ? "L" : "C"}${AS >= 50 ? "S" : "C"}${UN >= 50 ? "N" : "U"}${IT >= 50 ? "T" : "I"}`;
+    const valueTypeAlphabet = `${CL >= 50 ? "L" : "C"}${AS >= 50 ? "S" : "A"}${UN >= 50 ? "N" : "U"}${IT >= 50 ? "T" : "I"}`;
 
     const typeNames: Record<string, string> = {
-      CCUI: "アントレプレナー", CCUT: "リーダー",
-      CCNI: "リサーチャー",    CCNT: "パイオニア",
-      CSUI: "ストラテジスト",  CSUT: "マネージャー",
-      CSNI: "スペシャリスト",  CSNT: "ワーカー",
-      LCUI: "アーティスト",    LCUT: "インフルエンサー",
-      LCNI: "バックパッカー",  LCNT: "エクスプローラー",
+      AAUI: "アントレプレナー", AAUT: "リーダー",
+      AANI: "リサーチャー",    AANT: "パイオニア",
+      ASUI: "ストラテジスト",  ASUT: "マネージャー",
+      ASNI: "スペシャリスト",  ASNT: "ワーカー",
+      LAUI: "アーティスト",    LAUT: "インフルエンサー",
+      LANI: "バックパッカー",  LANT: "エクスプローラー",
       LSUI: "ソロツアラー",    LSUT: "プロデューサー",
       LSNI: "ヒーラー",        LSNT: "ゲスト",
     };
     const typeGroups: Record<string, string> = {
-      CC: "開拓タイプ", CS: "堅実タイプ", LC: "変革タイプ", LS: "満喫タイプ",
+      AA: "開拓タイプ", AS: "堅実タイプ", LA: "変革タイプ", LS: "満喫タイプ",
     };
     const typeName = typeNames[valueTypeAlphabet] ?? "留学タイプ";
     const typeGroup = typeGroups[valueTypeAlphabet.slice(0, 2)] ?? "";

@@ -1,7 +1,7 @@
 import { cardDict } from "./utils/cardInfo";
 
 export type Axis = "CL" | "AS" | "UN" | "IT";
-export type Pole = "C" | "L" | "S" | "U" | "N" | "I" | "T";
+export type Pole = "C" | "L" | "S" | "U" | "N" | "I" | "T" | "A";
 
 export type CardAxisScore = { axis: Axis; pole: Pole; score: number };
 export type CardInfo = {
@@ -48,7 +48,7 @@ export type ComputeAxisScoresOptions = {
 };
 
 const AXES: Axis[] = ["CL", "AS", "UN", "IT"];
-const LEFT_POLE: Record<Axis, Pole> = { CL: "C", AS: "C", UN: "U", IT: "I" };
+const LEFT_POLE: Record<Axis, Pole> = { CL: "C", AS: "A", UN: "U", IT: "I" };
 
 function clamp(x: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, x));

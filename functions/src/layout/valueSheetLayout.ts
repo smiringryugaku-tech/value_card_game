@@ -48,7 +48,7 @@ export function makeValueSheetSpec(params: {
   const KNOB_TOP = 1724;
   const KNOB_GAP = 125;
 
-  const labels = [["目的軸", "C", "L"], ["スタンス軸", "C", "S"], ["環境軸", "U", "N"], ["行動軸", "I", "T"]];
+  const labels = [["目的軸", "C", "L"], ["スタンス軸", "A", "S"], ["環境軸", "U", "N"], ["行動軸", "I", "T"]];
   const sliderLabelLayers = params.valueTypeScores.slice(0, 4).map((score, index) => {
     return {
       type: "text" as const,
