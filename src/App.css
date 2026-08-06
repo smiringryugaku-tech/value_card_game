@@ -40,3 +40,14 @@ body {
   min-height: 0;     /* これ大事, flex 子要素で内部スクロールを有効にする */
   padding: 8px;
 }
+
+/* スマホのゲーム画面では共通ヘッダーを隠して、盤面に高さを全部あげる */
+@media (max-width: 719px) {
+  .app-root--game .app-bar {
+    display: none;
+  }
+
+  .app-root--game .app-main {
+    padding: 0;
+  }
+}

@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ボード画面 スマホUI プレビュー</title>
+<style>
+  :root {
+    --bg: #fff4d1;
+    --ink: #12242e;
+    --accent: #56bff3;
+    --gold: #d0a963;
+    --gold-bg: #ffe9b8;
+    --panel: #fdfaf5;
+    --blue: #0070c9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Hiragino Sans", "Segoe UI", sans-serif;
+    background: #eef1f4;
+    color: var(--ink);
+  }
+
+  /* ============ プレビュー用シェル ============ */
+  .page-head {
+    padding: 18px 20px 14px;
+    background: #fff;
+    border-bottom: 1px solid #dde3e8;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .page-head h1 { margin: 0 0 4px; font-size: 18px; }
+  .page-head p { margin: 0 0 12px; font-size: 13px; color: #5b6a75; }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid #c9d2da; border-radius: 999px; overflow: hidden; background: #f6f8fa; }
+  .seg button {
+    border: 0; background: transparent; padding: 7px 14px; font-size: 13px;
+    cursor: pointer; color: #4a5a66; font-family: inherit;
+  }
+  .seg button.on { background: var(--accent); color: #fff; font-weight: 700; }
+  .seg-label { font-size: 12px; color: #7b8790; margin-right: -8px; }
+
+  .phones {
+    display: flex; gap: 28px; padding: 26px 20px 60px;
+    overflow-x: auto; align-items: flex-start;
+  }
+  .phone-wrap { margin: 0; flex: 0 0 auto; width: 390px; }
+  .phone-cap { margin-bottom: 10px; }
+  .phone-cap .tag {
+    display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .04em;
+    background: var(--ink); color: #fff; border-radius: 4px; padding: 2px 7px; margin-bottom: 6px;
+  }
+  .phone-cap h2 { margin: 0 0 4px; font-size: 15px; }
+  .phone-cap p { margin: 0; font-size: 12px; line-height: 1.55; color: #5b6a75; }
+  .phone {
+    width: 390px; height: 800px; border-radius: 38px; border: 9px solid #1b242b;
+    background: var(--bg); overflow: hidden; position: relative;
+    box-shadow: 0 14px 34px rgba(0,0,0,.22);
+  }
+  .notch {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 130px; height: 24px; background: #1b242b; border-radius: 0 0 14px 14px; z-index: 40;
+  }
+  .screen { position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ============ 共通モックUI ============ */
+  .m-statusbar-space { height: 26px; flex: 0 0 auto; }
+
+  /* --- 細いステータスストリップ --- */
+  .m-strip {
+    flex: 0 0 auto; display: flex; align-items: center; gap: 6px;
+    padding: 4px 10px 2px;
+  }
+  .m-strip-turn {
+    font-size: 13px; font-weight: 700; white-space: nowrap;
+  }
+  .m-strip-turn .who { color: var(--blue); }
+  .m-strip-turn.other .who { color: #8a6d3b; }
+  .m-time {
+    font-size: 12px; font-weight: 700; color: #2b6f2b;
+    background: #e5f5e5; border-radius: 999px; padding: 1px 7px;
+  }
+  .m-time.danger { color: #a86b00; background: #fff0d0; }
+  .m-strip-spacer { flex: 1 1 auto; }
+  .m-icon-btn {
+    border: 1px solid var(--gold); background: var(--gold-bg); border-radius: 8px;
+    width: 28px; height: 28px; font-size: 14px; line-height: 1; cursor: pointer; padding: 0;
+  }
+  .m-instr {
+    flex: 0 0 auto; font-size: 12px; color: var(--blue); font-weight: 600;
+    padding: 0 10px 4px; text-align: center; min-height: 17px;
+  }
+  .m-instr.muted { color: #94a2ab; font-weight: 500; }
+
+  /* --- 山札ヒーロー --- */
+  .m-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 10px 10px; }
+  .m-deck-hero { display: flex; flex-direction: column; align-items: center; padding: 4px 0 10px; }
+  .m-deck-btn {
+    position: relative; border: 0; padding: 0; background: transparent; cursor: pointer;
+    width: 168px; aspect-ratio: 4/5; border-radius: 14px; overflow: hidden;
+    box-shadow: 0 6px 16px rgba(0,0,0,.18);
+    transition: transform .12s ease;
+  }
+  .m-deck-btn.sm { width: 132px; }
+  .m-deck-btn:active { transform: scale(.97); }
+  .m-deck-btn img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .m-deck-btn.dim { filter: grayscale(.45) brightness(.88); box-shadow: none; }
+  .m-deck-btn.live { animation: pulse 1.8s ease-in-out infinite; }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 6px 16px rgba(0,0,0,.18), 0 0 0 0 rgba(86,191,243,.55); }
+    50%      { box-shadow: 0 6px 16px rgba(0,0,0,.18), 0 0 0 10px rgba(86,191,243,0); }
+  }
+  .m-deck-cta {
+    position: absolute; left: 0; right: 0; bottom: 0; padding: 16px 0 7px;
+    background: linear-gradient(to top, rgba(0,0,0,.62), transparent);
+    color: #fff; font-size: 13px; font-weight: 700; text-align: center;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .m-deck-cta img { width: 17px; height: 17px; object-fit: contain; }
+  .m-deck-count {
+    margin-top: 7px; font-size: 12px; font-weight: 700; color: #6b5a3a;
+    background: #fff; border: 1px solid var(--gold); border-radius: 999px; padding: 2px 12px;
+  }
+  .m-deck-chip-over {
+    position: absolute; top: 8px; left: 8px; right: 8px; display: flex; align-items: center; gap: 6px;
+    z-index: 3;
+  }
+  .m-chip {
+    background: rgba(255,255,255,.94); border-radius: 999px; padding: 3px 10px;
+    font-size: 12px; font-weight: 700; box-shadow: 0 2px 6px rgba(0,0,0,.18);
+  }
+  .m-chip.blue { color: var(--blue); }
+  .m-chip.time { color: #a86b00; }
+
+  /* --- 捨て札 --- */
+  .m-sec-head {
+    display: flex; align-items: baseline; gap: 7px; margin: 2px 2px 6px;
+  }
+  .m-sec-head h3 { margin: 0; font-size: 14px; font-weight: 800; }
+  .m-sec-head span { font-size: 11px; color: #8a949b; }
+  .m-discards {
+    display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px;
+    scroll-snap-type: x proximity;
+  }
+  .m-col {
+    flex: 0 0 118px; scroll-snap-align: start;
+    background: var(--panel); border: 1px solid rgba(0,0,0,.07); border-radius: 10px;
+    padding: 6px; display: flex; flex-direction: column; gap: 4px;
+  }
+  .m-col.active { border-color: #f2b55f; box-shadow: 0 0 0 2px rgba(242,181,95,.25); }
+  .m-col-name {
+    font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 4px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .m-badge {
+    font-size: 9px; color: #b15c00; background: #ffe3b8; border-radius: 999px; padding: 1px 5px; flex: 0 0 auto;
+  }
+  .m-dcard {
+    width: 100%; text-align: left; font-size: 11px; font-weight: 600; line-height: 1.25;
+    border: 1px solid #e2e2e2; background: #fff; border-radius: 6px; padding: 5px 6px; cursor: pointer;
+    font-family: inherit; color: var(--ink);
+  }
+  .m-dcard.pickable { border-color: var(--accent); box-shadow: 0 1px 0 rgba(86,191,243,.35); }
+  .m-dcard.pickable:active { background: #e9f6fd; }
+  .m-dcard.off { color: #adb5ba; background: #f7f7f7; }
+  .m-empty { font-size: 10px; color: #a8b0b5; padding: 4px 2px; }
+
+  /* --- FAB --- */
+  .m-fab {
+    position: absolute; right: 14px; bottom: 20px; z-index: 30;
+    border: 0; cursor: pointer; font-family: inherit;
+    background: var(--accent); color: #fff; font-weight: 800; font-size: 14px;
+    border-radius: 999px; padding: 13px 20px 13px 16px;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 8px 20px rgba(0,0,0,.28);
+  }
+  .m-fab:active { transform: translateY(1px); }
+  .m-fab.round { width: 62px; height: 62px; padding: 0; justify-content: center; font-size: 26px; }
+  .m-fab.urgent { background: #e5533d; animation: fabpulse 1.4s ease-in-out infinite; }
+  @keyframes fabpulse {
+    0%,100% { box-shadow: 0 8px 20px rgba(0,0,0,.28), 0 0 0 0 rgba(229,83,61,.5); }
+    50%     { box-shadow: 0 8px 20px rgba(0,0,0,.28), 0 0 0 12px rgba(229,83,61,0); }
+  }
+  .m-fab-count {
+    background: rgba(255,255,255,.28); border-radius: 999px; font-size: 12px; padding: 1px 7px;
+  }
+
+  /* --- モーダル（手札） --- */
+  .m-backdrop {
+    position: absolute; inset: 0; background: rgba(10,20,26,.55); z-index: 35;
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+    animation: fade .18s ease-out;
+  }
+  @keyframes fade { from { opacity: 0 } to { opacity: 1 } }
+  .m-modal {
+    width: 100%; background: #fffdf6; border-radius: 18px; padding: 12px 12px 14px;
+    box-shadow: 0 18px 40px rgba(0,0,0,.35);
+    animation: pop .2s cubic-bezier(.2,.9,.3,1.2);
+  }
+  @keyframes pop { from { transform: scale(.93); opacity: .4 } to { transform: scale(1); opacity: 1 } }
+  .m-modal-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .m-modal-head h3 { margin: 0; font-size: 15px; font-weight: 800; }
+  .m-modal-head .sub { font-size: 11px; color: #8a949b; }
+  .m-close {
+    margin-left: auto; border: 0; background: #eceff1; width: 30px; height: 30px; border-radius: 999px;
+    font-size: 16px; cursor: pointer; color: #55636c; font-family: inherit;
+  }
+  .m-modal-note {
+    font-size: 12px; font-weight: 700; color: #c9402a; margin: 2px 0 8px;
+  }
+  .m-modal-note.calm { color: #7b8790; font-weight: 500; }
+  .m-hand-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .m-hand-card {
+    position: relative; border: 1px solid var(--gold); background: #fffaf0; border-radius: 10px;
+    padding: 0; overflow: hidden; aspect-ratio: 4/5; cursor: pointer;
+  }
+  .m-hand-card img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .m-hand-card.throwable::after {
+    content: "捨てる"; position: absolute; inset: auto 0 0 0; background: rgba(229,83,61,.9);
+    color: #fff; font-size: 11px; font-weight: 800; padding: 3px 0; text-align: center;
+  }
+  .m-hand-card.throwable { border-color: #e5533d; box-shadow: 0 0 0 2px rgba(229,83,61,.2); }
+  .m-hand-card.throwable:active { transform: scale(.96); }
+  .m-hand-card.empty { border: 1px dashed rgba(0,0,0,.15); background: rgba(255,255,255,.4); cursor: default; }
+
+  /* --- ボトムシート（手札） --- */
+  .m-sheet {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 36;
+    background: #fffdf6; border-radius: 20px 20px 0 0; padding: 8px 12px 18px;
+    box-shadow: 0 -10px 30px rgba(0,0,0,.28);
+    animation: slideup .22s cubic-bezier(.2,.9,.3,1);
+  }
+  @keyframes slideup { from { transform: translateY(100%) } to { transform: translateY(0) } }
+  .m-sheet-handle {
+    width: 42px; height: 4px; border-radius: 999px; background: #d3d8dc; margin: 2px auto 8px;
+  }
+
+  /* --- 常時ミニ手札バー --- */
+  .m-handbar {
+    flex: 0 0 auto; z-index: 20;
+    background: rgba(255,255,255,.9); backdrop-filter: blur(6px);
+    border-top: 1px solid rgba(0,0,0,.08); padding: 5px 8px 10px;
+    box-shadow: 0 -4px 14px rgba(0,0,0,.08);
+  }
+  .m-handbar-top { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .m-handbar-top .lbl { font-size: 11px; font-weight: 700; color: #6b7780; }
+  .m-handbar-top .expand {
+    margin-left: auto; border: 0; background: transparent; color: var(--blue);
+    font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  .m-mini-row { display: flex; gap: 5px; }
+  .m-mini {
+    flex: 1 1 0; aspect-ratio: 4/5; border-radius: 6px; overflow: hidden;
+    border: 1px solid var(--gold); background: #fffaf0; padding: 0; cursor: pointer;
+  }
+  .m-mini img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .m-mini.throwable { border-color: #e5533d; box-shadow: 0 0 0 1.5px rgba(229,83,61,.25); }
+  .m-mini.empty { border: 1px dashed rgba(0,0,0,.15); background: rgba(255,255,255,.5); }
+
+  .hint {
+    font-size: 11px; color: #8a949b; margin-top: 8px; line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <h1>ボード画面 スマホUI プレビュー</h1>
+  <p>スマホでは共通ヘッダー（❤️‍🔥 留学価値観カードゲーム）を非表示 ／ ターン表示を小さく ／ 山札を主役に ／ 手札は必要なときだけ出す、という方針の3案です。</p>
+  <div class="controls">
+    <span class="seg-label">状態：</span>
+    <div class="seg" id="phaseSeg">
+      <button data-phase="draw" class="on">引くターン（自分）</button>
+      <button data-phase="discard">捨てるターン（自分）</button>
+      <button data-phase="wait">他の人のターン</button>
+    </div>
+  </div>
+</div>
+
+<div class="phones" id="phones"></div>
+
+<script>
+/* ====== モックデータ ====== */
+const HAND = [
+  { id: 1,  name: "将来の夢への直結度" },
+  { id: 19, name: "英語力" },
+  { id: 21, name: "学費" },
+  { id: 44, name: "治安の良さ" },
+  { id: 55, name: "食の豊かさ" },
+  { id: 30, name: "国際性" },
+];
+const PLAYERS = [
+  { name: "あなた",   cards: ["ナイトライフ", "部活"] },
+  { name: "みなと",   cards: ["資格", "地方", "スポーツ"] },
+  { name: "さくら",   cards: ["奨学金"] },
+  { name: "けんた",   cards: [] },
+];
+const DECK_COUNT = 38;
+const cardImg = (id) => `/cards/card_${String(id).padStart(2, "0")}.png`;
+
+/* ====== 状態 ====== */
+let phase = "draw";                     // draw | discard | wait
+const open = { A: false, B: false, C: false };   // 手札モーダル/シートの開閉
+
+/* ====== 部品 ====== */
+function strip(compact) {
+  const mine = phase !== "wait";
+  const who = mine ? "あなた" : "みなと";
+  const time = phase === "discard" ? `<span class="m-time danger">残り 8 秒</span>`
+                                   : `<span class="m-time">残り 24 秒</span>`;
+  return `
+    <div class="m-strip">
+      <div class="m-strip-turn ${mine ? "" : "other"}">
+        <span class="who">${who}</span>のターン
+      </div>
+      ${time}
+      <div class="m-strip-spacer"></div>
+      <button class="m-icon-btn" title="タイマー設定">⏰</button>
+      <button class="m-icon-btn" title="スキップ">⏩</button>
+    </div>`;
+}
+
+function instruction() {
+  if (phase === "draw")    return `<div class="m-instr">山札か捨て札から1枚引こう！</div>`;
+  if (phase === "discard") return `<div class="m-instr">手札から1枚捨てよう！</div>`;
+  return `<div class="m-instr muted">みなとの手番を待っています…</div>`;
+}
+
+function deckHero({ small = false, overlayChips = false } = {}) {
+  const live = phase === "draw";
+  return `
+    <div class="m-deck-hero">
+      <button class="m-deck-btn ${small ? "sm" : ""} ${live ? "live" : "dim"}">
+        <img src="/images/deck_ryugakusai.png" alt="山札" />
+        ${overlayChips ? `
+          <div class="m-deck-chip-over">
+            <span class="m-chip ${phase === "wait" ? "" : "blue"}">
+              ${phase === "wait" ? "みなとのターン" : "あなたのターン"}
+            </span>
+            <span class="m-chip time">${phase === "discard" ? "8s" : "24s"}</span>
+          </div>` : ``}
+        ${live ? `
+          <div class="m-deck-cta">
+            <img src="/images/hand-pick-yellow.png" alt="" />1枚引く
+          </div>` : ``}
+      </button>
+      <div class="m-deck-count">山札 残り ${DECK_COUNT} 枚</div>
+    </div>`;
+}
+
+function discards() {
+  const pickable = phase === "draw";
+  return `
+    <div class="m-sec-head">
+      <h3>捨て札</h3>
+      <span>${pickable ? "タップで引ける" : "横スクロール"}</span>
+    </div>
+    <div class="m-discards">
+      ${PLAYERS.map((p, i) => `
+        <div class="m-col ${(phase === "wait" && i === 1) || (phase !== "wait" && i === 0) ? "active" : ""}">
+          <div class="m-col-name">
+            ${p.name}
+            ${((phase === "wait" && i === 1) || (phase !== "wait" && i === 0)) ? `<span class="m-badge">手番</span>` : ``}
+          </div>
+          ${p.cards.length === 0
+            ? `<div class="m-empty">まだありません</div>`
+            : p.cards.slice().reverse().map(c =>
+                `<button class="m-dcard ${pickable ? "pickable" : "off"}">${c}</button>`).join("")}
+        </div>`).join("")}
+    </div>`;
+}
+
+function handGrid() {
+  const throwable = phase === "discard";
+  return `
+    <div class="m-hand-grid">
+      ${HAND.map(c => `
+        <button class="m-hand-card ${throwable ? "throwable" : ""}">
+          <img src="${cardImg(c.id)}" alt="${c.name}" />
+        </button>`).join("")}
+    </div>`;
+}
+
+function handModal(v, { sheet = false } = {}) {
+  const throwable = phase === "discard";
+  const inner = `
+    <div class="m-modal-head">
+      <h3>あなたの手札</h3>
+      <span class="sub">${HAND.length} 枚</span>
+      <button class="m-close" data-close="${v}">✕</button>
+    </div>
+    <div class="m-modal-note ${throwable ? "" : "calm"}">
+      ${throwable ? "捨てるカードをタップ" : "いまは引くフェーズ。手札の確認だけできます"}
+    </div>
+    ${handGrid()}`;
+  if (sheet) {
+    return `<div class="m-backdrop" data-close="${v}">
+      <div class="m-sheet" data-stop><div class="m-sheet-handle"></div>${inner}</div>
+    </div>`;
+  }
+  return `<div class="m-backdrop" data-close="${v}">
+    <div class="m-modal" data-stop>${inner}</div>
+  </div>`;
+}
+
+/* ====== 3案 ====== */
+function variantA() {
+  const throwable = phase === "discard";
+  return `
+    <div class="screen">
+      <div class="m-statusbar-space"></div>
+      ${strip()}
+      ${instruction()}
+      <div class="m-body">
+        ${deckHero()}
+        ${discards()}
+      </div>
+      <button class="m-fab ${throwable ? "urgent" : ""}" data-open="A">
+        🃏 ${throwable ? "捨てる" : "手札を見る"} <span class="m-fab-count">${HAND.length}</span>
+      </button>
+      ${open.A ? handModal("A") : ""}
+    </div>`;
+}
+
+function variantB() {
+  const throwable = phase === "discard";
+  return `
+    <div class="screen">
+      <div class="m-statusbar-space"></div>
+      <div class="m-body" style="padding-top:6px">
+        ${deckHero({ overlayChips: true })}
+        <div class="m-instr" style="padding-bottom:8px">
+          ${phase === "draw" ? "山札か捨て札から1枚引こう！"
+            : phase === "discard" ? "手札から1枚捨てよう！" : "みなとの手番を待っています…"}
+        </div>
+        ${discards()}
+      </div>
+      <button class="m-fab round ${throwable ? "urgent" : ""}" data-open="B">🃏</button>
+      ${open.B ? handModal("B", { sheet: true }) : ""}
+    </div>`;
+}
+
+function variantC() {
+  const throwable = phase === "discard";
+  return `
+    <div class="screen">
+      <div class="m-statusbar-space"></div>
+      ${strip()}
+      ${instruction()}
+      <div class="m-body">
+        ${deckHero({ small: true })}
+        ${discards()}
+      </div>
+      <div class="m-handbar">
+        <div class="m-handbar-top">
+          <span class="lbl">あなたの手札 ${HAND.length}枚</span>
+          ${throwable ? `<span class="m-badge">タップで捨てる</span>` : ``}
+          <button class="expand" data-open="C">拡大して見る ⤢</button>
+        </div>
+        <div class="m-mini-row">
+          ${HAND.map(c => `
+            <button class="m-mini ${throwable ? "throwable" : ""}" data-open="C">
+              <img src="${cardImg(c.id)}" alt="${c.name}" />
+            </button>`).join("")}
+        </div>
+      </div>
+      ${open.C ? handModal("C") : ""}
+    </div>`;
+}
+
+/* ====== 描画 ====== */
+const META = [
+  { key: "A", tag: "案A", title: "ヒーロー山札 ＋ テキストFAB",
+    desc: "上に細いターン表示、山札を大きく中央に。右下は「手札を見る」の横長FAB（枚数バッジ付き）。タップで手札モーダルが2×3で開く。捨てフェーズではFABが赤くなり文言が「捨てる」に変わる。",
+    render: variantA },
+  { key: "B", tag: "案B", title: "情報を山札に統合 ＋ 丸FAB ＋ ボトムシート",
+    desc: "ターン名と残り時間を山札画像の上にチップで重ねて、文字ゾーンを完全に削除。最も情報密度が低く山札が最大。手札は下からせり上がるシートで表示。",
+    render: variantB },
+  { key: "C", tag: "案C", title: "常時ミニ手札バー ＋ タップで拡大",
+    desc: "画面下に手札のサムネを常時表示。今の手札を常に把握でき、捨てる操作はバーから直接1タップ。拡大したいときだけモーダルへ。山札はやや小さめ。",
+    render: variantC },
+];
+
+function render() {
+  document.getElementById("phones").innerHTML = META.map(m => `
+    <figure class="phone-wrap">
+      <div class="phone-cap">
+        <div class="tag">${m.tag}</div>
+        <h2>${m.title}</h2>
+        <p>${m.desc}</p>
+      </div>
+      <div class="phone"><div class="notch"></div>${m.render()}</div>
+    </figure>`).join("");
+}
+
+document.addEventListener("click", (e) => {
+  const openBtn = e.target.closest("[data-open]");
+  if (openBtn) { open[openBtn.dataset.open] = true; render(); return; }
+  const closeEl = e.target.closest("[data-close]");
+  if (closeEl && !e.target.closest("[data-stop]")) { open[closeEl.dataset.close] = false; render(); return; }
+  if (e.target.closest(".m-close")) { open[e.target.closest(".m-close").dataset.close] = false; render(); }
+});
+
+document.getElementById("phaseSeg").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  phase = b.dataset.phase;
+  [...e.currentTarget.children].forEach(c => c.classList.toggle("on", c === b));
+  // 捨てるターンでは手札を自動で開く想定
+  const auto = phase === "discard";
+  open.A = auto; open.B = auto; open.C = false;
+  render();
+});
+
+render();
+</script>
+</body>
+</html>

@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import "./ResultPage.css";
 import type { Room, Player, CardId } from "../../types";
-import { cardDict } from "../../utils/cardInfo";
+import { cardDict, getCardImageUrl } from "../../utils/cardInfo";
 import { analyzeWithGemini, buildValueSheet } from "../../api/analyze";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "../../firebase";
@@ -183,7 +183,12 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
     if (cardId == null) return <div key={key} className={baseClass} />;
     return (
       <div key={key} className={baseClass}>
-        <div className="result-my-card-text">{getCardName(cardId)}</div>
+        <img
+          src={getCardImageUrl(cardId)}
+          alt={getCardName(cardId)}
+          className="result-card-image"
+          draggable={false}
+        />
       </div>
     );
   };
@@ -198,7 +203,12 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
     if (cardId == null) return <div key={key} className={baseClass} />;
     return (
       <div key={key} className={baseClass}>
-        <div className="result-other-card-text">{getCardName(cardId)}</div>
+        <img
+          src={getCardImageUrl(cardId)}
+          alt={getCardName(cardId)}
+          className="result-card-image"
+          draggable={false}
+        />
       </div>
     );
   };

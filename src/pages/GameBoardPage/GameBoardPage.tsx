@@ -1,6 +1,6 @@
 // src/pages/GameBoardPage/GameBoardPage.tsx
 import type { CardId, Player, Room } from "../../types";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import "./GameBoardPage.css";
 // パスはあなたのプロジェクトに合わせて変えてね
 import { cardDict, getCardImageUrl } from "../../utils/cardInfo";
@@ -20,6 +20,24 @@ function getCardName(cardId: CardId): string {
   const info = (cardDict as any)[cardId];
   return info ? info.japanese : `カード ${cardId}`;
 }
+
+type FlightRect = { left: number; top: number; width: number; height: number };
+
+type FlyingCard = {
+  cardId: CardId;
+  from: FlightRect;
+  to: FlightRect;
+  moving: boolean;
+};
+
+function rectOf(el: Element): FlightRect {
+  const r = el.getBoundingClientRect();
+  return { left: r.left, top: r.top, width: r.width, height: r.height };
+}
+
+// ★ 引いたカードが飛んでいく演出のタイミング（ミリ秒）
+const FLIGHT_MS = 460;
+const POP_MS = 550;
 
 export function GameBoardPage({
   room,
@@ -130,6 +148,100 @@ export function GameBoardPage({
     return () => window.clearInterval(id);
   }, [activePlayerId, room.turnIndex, turnTimerSeconds]);
 
+  // ★ スマホ用：手札ボトムシート
+  const [isHandSheetOpen, setIsHandSheetOpen] = useState(canDiscard);
+
+  const handleSheetDiscard = (cardId: CardId) => {
+    setIsHandSheetOpen(false);
+    onDiscard(cardId);
+  };
+
+  // ★ 「引いたカードが手札ボタンへ飛んでいく」演出
+  const handFabRef = useRef<HTMLButtonElement | null>(null);
+  const handSlotRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const flightTimeoutRef = useRef<number | null>(null);
+  const popTimeoutRef = useRef<number | null>(null);
+
+  const [flyingCard, setFlyingCard] = useState<FlyingCard | null>(null);
+  const [justLandedCardId, setJustLandedCardId] = useState<CardId | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (flightTimeoutRef.current != null) window.clearTimeout(flightTimeoutRef.current);
+      if (popTimeoutRef.current != null) window.clearTimeout(popTimeoutRef.current);
+    };
+  }, []);
+
+  // スマホ：右下の FAB／PC：手札の該当スロット、どちらに飛ばすか
+  const getFlightTargetRect = (slotIndex: number): FlightRect | null => {
+    const fabEl = handFabRef.current;
+    if (fabEl && window.getComputedStyle(fabEl).display !== "none") {
+      return rectOf(fabEl);
+    }
+    const slotEl = handSlotRefs.current[slotIndex];
+    return slotEl ? rectOf(slotEl) : null;
+  };
+
+  const startFlight = (
+    cardId: CardId,
+    originEl: HTMLElement,
+    slotIndex: number
+  ) => {
+    const toRect = getFlightTargetRect(slotIndex);
+    if (!toRect) return; // 位置が取れない場合はアニメーションだけスキップ（動作自体は通常通り）
+
+    const fromRect = rectOf(originEl);
+
+    if (flightTimeoutRef.current != null) window.clearTimeout(flightTimeoutRef.current);
+    if (popTimeoutRef.current != null) window.clearTimeout(popTimeoutRef.current);
+
+    setJustLandedCardId(null);
+    setFlyingCard({ cardId, from: fromRect, to: toRect, moving: false });
+
+    // 1フレーム待ってから移動先の座標に切り替えることで、CSS transition が発火する
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setFlyingCard((prev) => (prev ? { ...prev, moving: true } : prev));
+      });
+    });
+
+    flightTimeoutRef.current = window.setTimeout(() => {
+      setFlyingCard(null);
+      setJustLandedCardId(cardId);
+      setIsHandSheetOpen(true);
+
+      popTimeoutRef.current = window.setTimeout(() => {
+        setJustLandedCardId(null);
+      }, POP_MS);
+    }, FLIGHT_MS);
+  };
+
+  const handleDeckDrawClick = (e: MouseEvent<HTMLButtonElement>) => {
+    const topCardId = room.deck?.[0];
+    if (topCardId != null) {
+      startFlight(topCardId, e.currentTarget, myHand.length);
+    }
+    onDrawFromDeck();
+  };
+
+  const handleDiscardDrawClick = (
+    e: MouseEvent<HTMLButtonElement>,
+    fromPlayerId: string,
+    cardIndex: number,
+    cardId: CardId
+  ) => {
+    startFlight(cardId, e.currentTarget, myHand.length);
+    onDrawFromDiscard(fromPlayerId, cardIndex);
+  };
+
+  // 捨てフェーズに入った瞬間だけ自動で開く（その後は手動で開閉できる）
+  // ただし、カードが手札ボタンへ飛んでいる最中はその演出が終わるまで開かない
+  const [prevCanDiscard, setPrevCanDiscard] = useState(canDiscard);
+  if (prevCanDiscard !== canDiscard) {
+    setPrevCanDiscard(canDiscard);
+    if (canDiscard && flyingCard === null) setIsHandSheetOpen(true);
+  }
+
   return (
     <div className="game-board-root">
       {/* ヘッダーゾーン（高さ10%想定） */}
@@ -163,7 +275,7 @@ export function GameBoardPage({
                       (remainingSeconds <= 0 ? " gb-header-time--over" : remainingSeconds <= 5 ? " gb-header-time--danger" : "")
                     }
                   >
-                    （残り {remainingSeconds} 秒）
+                    残り {remainingSeconds} 秒
                   </span>
                 )}
               </>
@@ -216,7 +328,7 @@ export function GameBoardPage({
                   "gb-deck-image-wrapper" +
                   (canDraw && deckCount > 0 ? " gb-deck-image-wrapper--active" : "")
                 }
-                onClick={onDrawFromDeck}
+                onClick={handleDeckDrawClick}
                 disabled={!canDraw || deckCount === 0}
               >
                 <img
@@ -278,8 +390,8 @@ export function GameBoardPage({
                             key={`${cardId}-${originalIndex}`}
                             type="button"
                             className="gb-discard-card"
-                            onClick={() =>
-                              onDrawFromDiscard(p.id, originalIndex)
+                            onClick={(e) =>
+                              handleDiscardDrawClick(e, p.id, originalIndex, cardId)
                             }
                             disabled={!canPick}
                           >
@@ -312,39 +424,51 @@ export function GameBoardPage({
           // スロット用の key は slotIndex で固定
           const slotKey = `slot-${slotIndex}`;
 
+          const setSlotRef = (el: HTMLDivElement | null) => {
+            handSlotRefs.current[slotIndex] = el;
+          };
+
           if (cardId == null) {
             // ★ 中身なし：枠だけのスロット
             return (
               <div
                 key={slotKey}
+                ref={setSlotRef}
                 className="gb-hand-card-slot gb-hand-card-slot--empty"
               />
             );
           }
 
+          // 飛んでいる最中のカードは、着地演出と入れ替わるまで実体を隠す
+          const isIncoming = flyingCard?.cardId === cardId;
+          const isJustLanded = justLandedCardId === cardId;
+
           // ★ 中身あり：スロットの中にボタン
           return (
-            <div key={slotKey} className="gb-hand-card-slot">
-              <button
-                type="button"
-                className={
-                  "gb-hand-card-button" +
-                  (canDiscard ? " gb-hand-card-button--discardable" : "")
-                }
-                onClick={() => onDiscard(cardId)}
-                disabled={!canDiscard}
-              >
-                <img
-                  src={getCardImageUrl(cardId)}
-                  alt={getCardName(cardId)}
-                  className="gb-hand-card-image"
-                  draggable={false}
-                />
-                {/* 捨てフェーズのときだけ赤エフェクト */}
-                {canDiscard && (
-                  <div className="gb-hand-card-overlay" />
-                )}
-              </button>
+            <div key={slotKey} ref={setSlotRef} className="gb-hand-card-slot">
+              {!isIncoming && (
+                <button
+                  type="button"
+                  className={
+                    "gb-hand-card-button" +
+                    (canDiscard ? " gb-hand-card-button--discardable" : "") +
+                    (isJustLanded ? " gb-hand-card-button--pop" : "")
+                  }
+                  onClick={() => onDiscard(cardId)}
+                  disabled={!canDiscard}
+                >
+                  <img
+                    src={getCardImageUrl(cardId)}
+                    alt={getCardName(cardId)}
+                    className="gb-hand-card-image"
+                    draggable={false}
+                  />
+                  {/* 捨てフェーズのときだけ赤エフェクト */}
+                  {canDiscard && (
+                    <div className="gb-hand-card-overlay" />
+                  )}
+                </button>
+              )}
             </div>
           );
         })}
@@ -352,6 +476,123 @@ export function GameBoardPage({
         </div>
 
       </div>
+
+      {/* ★ スマホ用：手札を開く FAB */}
+      <button
+        type="button"
+        ref={handFabRef}
+        className={
+          "gb-hand-fab" + (canDiscard ? " gb-hand-fab--discard" : "")
+        }
+        onClick={() => setIsHandSheetOpen(true)}
+      >
+        <span className="gb-hand-fab-icon">🃏</span>
+        <span className="gb-hand-fab-label">
+          {canDiscard ? "カードを捨てる" : "手札を見る"}
+        </span>
+        <span className="gb-hand-fab-count">{myHand.length}</span>
+      </button>
+
+      {/* ★ 引いたカードが飛んでいく演出用のゴースト */}
+      {flyingCard && (
+        <img
+          src={getCardImageUrl(flyingCard.cardId)}
+          alt=""
+          aria-hidden="true"
+          className="gb-flying-card"
+          style={{
+            left: (flyingCard.moving ? flyingCard.to.left : flyingCard.from.left) + "px",
+            top: (flyingCard.moving ? flyingCard.to.top : flyingCard.from.top) + "px",
+            width: (flyingCard.moving ? flyingCard.to.width : flyingCard.from.width) + "px",
+            height: (flyingCard.moving ? flyingCard.to.height : flyingCard.from.height) + "px",
+            opacity: flyingCard.moving ? 0.1 : 1,
+          }}
+        />
+      )}
+
+      {/* ★ スマホ用：手札ボトムシート */}
+      {isHandSheetOpen && (
+        <div
+          className="gb-hand-sheet-backdrop"
+          onClick={() => setIsHandSheetOpen(false)}
+        >
+          <div
+            className="gb-hand-sheet"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="gb-hand-sheet-handle" />
+
+            <div className="gb-hand-sheet-head">
+              <span className="gb-hand-sheet-title">あなたの手札</span>
+              <span className="gb-hand-sheet-count">{myHand.length} 枚</span>
+              <button
+                type="button"
+                className="gb-hand-sheet-close"
+                onClick={() => setIsHandSheetOpen(false)}
+                aria-label="閉じる"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div
+              className={
+                "gb-hand-sheet-note" +
+                (canDiscard ? " gb-hand-sheet-note--discard" : "")
+              }
+            >
+              {canDiscard
+                ? "捨てるカードをタップ"
+                : canDraw
+                ? "先に山札か捨て札から1枚引こう"
+                : "いまは他のプレイヤーの手番です"}
+            </div>
+
+            <div className="gb-hand-sheet-grid">
+              {Array.from({ length: 6 }).map((_, slotIndex) => {
+                const cardId = myHand[slotIndex];
+                const slotKey = `sheet-slot-${slotIndex}`;
+
+                if (cardId == null) {
+                  return (
+                    <div
+                      key={slotKey}
+                      className="gb-sheet-card gb-sheet-card--empty"
+                    />
+                  );
+                }
+
+                const isJustLanded = justLandedCardId === cardId;
+
+                return (
+                  <button
+                    key={slotKey}
+                    type="button"
+                    className={
+                      "gb-sheet-card" +
+                      (canDiscard ? " gb-sheet-card--discardable" : "") +
+                      (isJustLanded ? " gb-sheet-card--pop" : "")
+                    }
+                    onClick={() => handleSheetDiscard(cardId)}
+                    disabled={!canDiscard}
+                  >
+                    <img
+                      src={getCardImageUrl(cardId)}
+                      alt={getCardName(cardId)}
+                      className="gb-sheet-card-image"
+                      draggable={false}
+                    />
+                    {canDiscard && (
+                      <span className="gb-sheet-card-action">捨てる</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ★ タイマー設定ダイアログ */}
     {isTimerDialogOpen && (
       <div className="gb-timer-dialog-backdrop" onClick={closeTimerDialog}>

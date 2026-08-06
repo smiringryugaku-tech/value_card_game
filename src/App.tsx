@@ -365,7 +365,7 @@ function App() {
   else { content = <div>エラー: 無効な画面状態です。</div>; }
 
   return (
-    <div className="app-root">
+    <div className={"app-root" + (isFixedLayout ? " app-root--game" : "")}>
       <header className="app-bar">
         <div style={{ fontSize: "min(32px, 4vh, 5vw)", fontWeight: "bold" }}>❤️‍🔥 留学価値観カードゲーム</div>
         {playerName && (

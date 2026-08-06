@@ -76,6 +76,8 @@ export function RoomSetupPage({
               <span className="room-setup-label-text">ルームコード</span>
               <input
                 type="text"
+                name="roomCode"
+                autoComplete="off"
                 value={roomCode}
                 onChange={(e) =>
                   onRoomCodeChange(e.target.value.toUpperCase())

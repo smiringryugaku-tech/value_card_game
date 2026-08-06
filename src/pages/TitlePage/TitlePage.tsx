@@ -53,6 +53,8 @@ export function TitlePage({ onSubmit }: TitlePageProps) {
             <span className="title-name-caption">プレイヤー名を入力（10文字以下）</span>
             <input
               type="text"
+              name="playerName"
+              autoComplete="off"
               className="title-name-input"
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
