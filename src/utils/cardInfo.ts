@@ -1,5 +1,5 @@
 export function getCardImageUrl(cardId: number): string {
-  return `/cards/card_${cardId.toString().padStart(2, "0")}.png`;
+  return `/cards/card_${cardId.toString().padStart(2, "0")}.webp`;
 }
 
 type CardInfo = { japanese: string };

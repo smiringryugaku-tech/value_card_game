@@ -142,7 +142,13 @@ function buildTextSvg(layer: TextLayer): Buffer {
   return Buffer.from(svg);
 }
 
-async function downloadGsFile(gsPath: string): Promise<Buffer> {
+async function loadImageBuffer(gsPath: string): Promise<Buffer> {
+  const localPath = path.resolve(__dirname, "..", gsPath);
+  if (fs.existsSync(localPath)) {
+    return fs.readFileSync(localPath);
+  }
+
+  console.log(`[loadImageBuffer] Local file not found: ${localPath}, falling back to Storage: ${gsPath}`);
   const bucket = getStorage().bucket();
   const [buf] = await bucket.file(gsPath).download();
   return buf;
@@ -170,7 +176,7 @@ async function applyRoundedCorners(
 
 
 export async function composeImage(spec: ComposeSpec): Promise<Buffer> {
-  const base = await downloadGsFile(spec.templateGsPath);
+  const base = await loadImageBuffer(spec.templateGsPath);
 
   const meta = await sharp(base).metadata();
   const templateWidth = meta.width ?? 0;
@@ -178,45 +184,46 @@ export async function composeImage(spec: ComposeSpec): Promise<Buffer> {
 
   let pipeline = sharp(base);
 
-  const composites: sharp.OverlayOptions[] = [];
+  const overlays: sharp.OverlayOptions[] = [];
 
   for (const layer of spec.layers) {
     if (layer.type === "text") {
-      const svg = buildTextSvg(layer);
-      composites.push({ input: svg, left: layer.left, top: layer.top });
-      continue;
-    }
+      const svgBuf = buildTextSvg(layer);
+      overlays.push({
+        input: svgBuf,
+        left: layer.left,
+        top: layer.top,
+      });
+    } else if (layer.type === "image") {
+      const imgBuf = await loadImageBuffer(layer.gsPath);
+      let img = sharp(imgBuf);
 
-    // image layer
-    const imgBuf = await downloadGsFile(layer.gsPath);
-    let img = sharp(imgBuf);
+      const targetWidth = layer.width;
+      const targetHeight = layer.height;
 
-    // ここで最終サイズを決める
-    const targetWidth = layer.width;
-    const targetHeight = layer.height;
+      if (targetWidth || targetHeight) {
+        img = img.resize(targetWidth, targetHeight, {
+          fit: layer.fit ?? "contain",
+        });
+      }
 
-    if (targetWidth || targetHeight) {
-      img = img.resize(targetWidth, targetHeight, {
-        fit: layer.fit ?? "contain",
+      if (layer.borderRadius && layer.borderRadius > 0) {
+        const w = targetWidth ?? (await img.metadata()).width ?? 0;
+        const h = targetHeight ?? (await img.metadata()).height ?? 0;
+
+        img = await applyRoundedCorners(img, w, h, layer.borderRadius);
+      }
+
+      const input = await img.png().toBuffer();
+      overlays.push({
+        input,
+        left: Math.round(layer.left),
+        top: Math.round(layer.top),
       });
     }
-
-    if (layer.borderRadius && layer.borderRadius > 0) {
-      const w = targetWidth ?? (await img.metadata()).width ?? 0;
-      const h = targetHeight ?? (await img.metadata()).height ?? 0;
-
-      img = await applyRoundedCorners(img, w, h, layer.borderRadius);
-    }
-
-    const input = await img.png().toBuffer();
-    composites.push({
-      input,
-      left: Math.round(layer.left),
-      top: Math.round(layer.top),
-    });
   }
 
-  pipeline = pipeline.composite(composites);
+  pipeline = pipeline.composite(overlays);
 
   if (spec.output.format === "jpeg") {
     return pipeline.jpeg({ quality: spec.output.quality ?? 90 }).toBuffer();

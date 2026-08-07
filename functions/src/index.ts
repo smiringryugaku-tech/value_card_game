@@ -65,8 +65,8 @@ async function findRecentValueSheet(params: {
   return { url, path: latest.name, ageMs };
 }
 
-export const getValueSheetDownloadUrl = onCall(async (req) => {
-  const { imagePath, filename } = req.data ?? {};
+async function handleGetValueSheetDownloadUrl(data: any) {
+  const { imagePath, filename } = data ?? {};
   if (!imagePath || typeof imagePath !== "string") {
     throw new HttpsError("invalid-argument", "imagePath (string) is required");
   }
@@ -95,18 +95,12 @@ export const getValueSheetDownloadUrl = onCall(async (req) => {
   });
 
   return { url };
-});
+}
 
 // ステップ1: Gemini AI分析 + 軸スコア計算
-export const analyzeWithGemini = onCall({
-  secrets: [GEMINI_API_KEY],
-  memory: "512MiB",
-  timeoutSeconds: 60,
-  concurrency: 1,
-  maxInstances: 6,
-}, async (req) => {
+async function handleAnalyzeWithGemini(data: any) {
   try {
-    const { roomId, playerId } = req.data ?? {};
+    const { roomId, playerId } = data ?? {};
     if (!roomId || !playerId) {
       throw new HttpsError("invalid-argument", "roomId and playerId are required");
     }
@@ -204,17 +198,12 @@ export const analyzeWithGemini = onCall({
     if (err?.code && err instanceof HttpsError) throw err;
     throw new HttpsError("internal", err?.message ?? "Unknown error");
   }
-});
+}
 
 // ステップ2: 画像生成・アップロード
-export const buildValueSheet = onCall({
-  memory: "1GiB",
-  timeoutSeconds: 60,
-  concurrency: 1,
-  maxInstances: 6,
-}, async (req) => {
+async function handleBuildValueSheet(data: any) {
   try {
-    const { roomId, playerId, stepData } = req.data ?? {};
+    const { roomId, playerId, stepData } = data ?? {};
     if (!roomId || !playerId || !stepData) {
       throw new HttpsError("invalid-argument", "roomId, playerId, stepData are required");
     }
@@ -230,7 +219,7 @@ export const buildValueSheet = onCall({
       dateText,
     } = stepData;
 
-    const TEMPLATE_PATH = "assets/templates/value_sheet_base_temp.png";
+    const TEMPLATE_PATH = "assets/template/value_sheet_base_temp.png";
     const W = 1350;
     const H = 2400;
 
@@ -261,5 +250,28 @@ export const buildValueSheet = onCall({
     logger.error("buildValueSheet failed", err);
     if (err?.code && err instanceof HttpsError) throw err;
     throw new HttpsError("internal", err?.message ?? "Unknown error");
+  }
+}
+
+// 全アクションを単一のCloud Functionに集約（コンテナを1つにまとめてウォームアップを有効化するため）
+export const api = onCall({
+  secrets: [GEMINI_API_KEY],
+  memory: "1GiB",
+  timeoutSeconds: 60,
+  concurrency: 1,
+  maxInstances: 6,
+}, async (req) => {
+  const { action, ...data } = req.data ?? {};
+  switch (action) {
+    case "warmup":
+      return { status: "ok", timestamp: Date.now() };
+    case "getValueSheetDownloadUrl":
+      return handleGetValueSheetDownloadUrl(data);
+    case "analyzeWithGemini":
+      return handleAnalyzeWithGemini(data);
+    case "buildValueSheet":
+      return handleBuildValueSheet(data);
+    default:
+      throw new HttpsError("invalid-argument", `unknown action: ${action}`);
   }
 });

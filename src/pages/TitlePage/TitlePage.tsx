@@ -35,7 +35,7 @@ export function TitlePage({ onSubmit }: TitlePageProps) {
         {/* ロゴ */}
         <div className="title-logo-wrapper">
           <img
-            src="/images/smiring_logo.png"
+            src="/images/smiring_logo.webp"
             alt="SmiRing ロゴ"
             className="title-logo-img"
           />

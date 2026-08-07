@@ -22,16 +22,25 @@ export type BuildSheetResponse = {
   result: { analysis: string };
 };
 
+export type DownloadUrlResponse = { url: string };
+
+// バックエンドの全アクションは単一のCloud Function(api)に集約されている。
+// コンテナが1つにまとまることで、warmupのポーリングが他アクションのウォームアップとしても機能する。
+const apiFn = httpsCallable<{ action: string; [key: string]: unknown }, unknown>(
+  functions,
+  "api"
+);
+
+async function callApi<T>(action: string, payload: Record<string, unknown> = {}): Promise<T> {
+  const res = await apiFn({ action, ...payload });
+  return res.data as T;
+}
+
 export async function analyzeWithGemini(
   roomId: string,
   playerId: string
 ): Promise<AnalyzeResponse> {
-  const fn = httpsCallable<{ roomId: string; playerId: string }, AnalyzeResponse>(
-    functions,
-    "analyzeWithGemini"
-  );
-  const res = await fn({ roomId, playerId });
-  return res.data;
+  return callApi<AnalyzeResponse>("analyzeWithGemini", { roomId, playerId });
 }
 
 export async function buildValueSheet(
@@ -39,10 +48,20 @@ export async function buildValueSheet(
   playerId: string,
   stepData: AnalysisStepData
 ): Promise<BuildSheetResponse> {
-  const fn = httpsCallable<
-    { roomId: string; playerId: string; stepData: AnalysisStepData },
-    BuildSheetResponse
-  >(functions, "buildValueSheet");
-  const res = await fn({ roomId, playerId, stepData });
-  return res.data;
+  return callApi<BuildSheetResponse>("buildValueSheet", { roomId, playerId, stepData });
+}
+
+export async function getValueSheetDownloadUrl(
+  imagePath: string,
+  filename?: string
+): Promise<DownloadUrlResponse> {
+  return callApi<DownloadUrlResponse>("getValueSheetDownloadUrl", { imagePath, filename });
+}
+
+export async function warmupBackend(): Promise<void> {
+  try {
+    await callApi("warmup");
+  } catch (e) {
+    console.warn("[Warmup] failed to ping backend:", e);
+  }
 }

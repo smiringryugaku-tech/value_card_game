@@ -23,21 +23,16 @@ export function makeValueSheetSpec(params: {
   const lines = params.analysisText.split(/\r?\n/).filter(line => line.trim() !== "");
   const lineCount = lines.length;
 
-  const cardLayers = params.finalHandCardNames.slice(0, 5).map((cardName, index) => {
+  const cardLayers = params.finalHandCardIds.slice(0, 5).map((cardId, index) => {
+    const paddedId = cardId.toString().padStart(2, "0");
     return {
-      type: "text" as const,
-      text: cardName,
+      type: "image" as const,
+      gsPath: `assets/cards/ryugaku_ver/card_${paddedId}.png`,
       left: Math.round(CARD_LEFT_START + index * (CARD_WIDTH + CARD_GAP)),
-      top: CARD_TOP + Math.round(CARD_HEIGHT / 2) - 40,
+      top: CARD_TOP,
       width: CARD_WIDTH,
       height: CARD_HEIGHT,
-      fontSize: 24,
-      lineHeight: 1.5,
-      align: "center" as const,
-      fill: "#4a2f16",
-      stroke: "#ffffff",
-      strokeWidth: 4,
-      fontWeight: 700,
+      fit: "contain" as const,
     };
   });
 

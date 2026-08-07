@@ -17,6 +17,7 @@ import {
 } from "./services/roomService";
 import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { db } from "./firebase";
+import { warmupBackend } from "./api/analyze";
 
 function App() {
   const [screen, setScreen] = useState<Screen>("title");
@@ -37,6 +38,17 @@ function App() {
 
   const [turnStartTime, setTurnStartTime] = useState<number | null>(null);
 
+  // ゲーム中の操作のたびにバックエンドを起こしておき、結果画面でのAI分析の
+  // コールドスタートを避ける。呼びすぎ防止のため一定間隔でしか実際には叩かない。
+  const lastWarmupAtRef = useRef<number>(0);
+  const WARMUP_INTERVAL_MS = 4 * 60 * 1000;
+  const checkAndWarmupBackend = () => {
+    const now = Date.now();
+    if (now - lastWarmupAtRef.current < WARMUP_INTERVAL_MS) return;
+    lastWarmupAtRef.current = now;
+    void warmupBackend();
+  };
+
   useEffect(() => {
     const id = getOrCreatePlayerId();
     setPlayerId(id);
@@ -54,6 +66,7 @@ function App() {
   const handleRoomSubmit = async () => {
     if (!mode || !playerId) return;
     setErrorMessage(null);
+    checkAndWarmupBackend();
 
     const trimmedCode = roomCode.trim().toUpperCase();
     if (!trimmedCode) return;
@@ -112,6 +125,7 @@ function App() {
     if (!room) return;
   
     setErrorMessage(null);
+    checkAndWarmupBackend();
   
     try {
       if (playerId && room.hostId !== playerId) {
@@ -131,6 +145,7 @@ function App() {
 
   const handleDrawFromDeck = async () => {
     if (!room || !playerId) return;
+    checkAndWarmupBackend();
     try {
       await drawFromDeck(room.code, playerId);
       cardFromRef.current = "deck";
@@ -142,6 +157,7 @@ function App() {
   
   const handleDrawFromDiscard = async (fromPlayerId: string, cardIndex: number) => {
     if (!room || !playerId) return;
+    checkAndWarmupBackend();
     try {
       await drawFromDiscardPile(room.code, playerId, fromPlayerId, cardIndex);
       cardFromRef.current = "discard";
@@ -153,6 +169,7 @@ function App() {
   
   const handleDiscardCard = async (cardId: CardId) => {
     if (!room || !playerId) return;
+    checkAndWarmupBackend();
   
     const now = Date.now();
     const delaySec =

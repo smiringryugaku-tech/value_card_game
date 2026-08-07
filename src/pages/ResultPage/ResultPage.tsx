@@ -3,11 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import "./ResultPage.css";
 import type { Room, Player, CardId } from "../../types";
 import { cardDict, getCardImageUrl } from "../../utils/cardInfo";
-import { analyzeWithGemini, buildValueSheet } from "../../api/analyze";
-import { httpsCallable } from "firebase/functions";
-import { functions } from "../../firebase";
-
-const getDownloadUrlFn = httpsCallable(functions, "getValueSheetDownloadUrl");
+import { analyzeWithGemini, buildValueSheet, getValueSheetDownloadUrl } from "../../api/analyze";
 
 type ResultPageProps = {
   room: Room;
@@ -155,8 +151,8 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
     try {
       if (!analysisImagePath) return;
       const filename = `value_sheet_${roomId}_${myPlayerId}.png`;
-      const res = await getDownloadUrlFn({ imagePath: analysisImagePath, filename });
-      const url = (res.data as any)?.url as string | undefined;
+      const res = await getValueSheetDownloadUrl(analysisImagePath, filename);
+      const url = res.url;
       if (!url) throw new Error("download url missing");
       const w = window.open(url, "_blank", "noopener,noreferrer");
       if (!w) window.location.assign(url);

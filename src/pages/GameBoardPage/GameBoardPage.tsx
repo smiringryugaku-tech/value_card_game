@@ -25,6 +25,7 @@ type FlightRect = { left: number; top: number; width: number; height: number };
 
 type FlyingCard = {
   cardId: CardId;
+  imgSrc: string;
   from: FlightRect;
   to: FlightRect;
   moving: boolean;
@@ -38,6 +39,12 @@ function rectOf(el: Element): FlightRect {
 // ★ 引いたカードが飛んでいく演出のタイミング（ミリ秒）
 const FLIGHT_MS = 460;
 const POP_MS = 550;
+
+// ★ 山札から引くときのゴーストカードの絵柄（着地するまでは中身を見せない）
+const DECK_BACK_IMAGE_SRC = "/images/deck_ryugakusai.webp";
+
+// ★ 飛んでいく最中のカードの縮小率（元サイズに対する割合）
+const FLIGHT_SHRINK_SCALE = 0.3;
 
 export function GameBoardPage({
   room,
@@ -151,11 +158,6 @@ export function GameBoardPage({
   // ★ スマホ用：手札ボトムシート
   const [isHandSheetOpen, setIsHandSheetOpen] = useState(canDiscard);
 
-  const handleSheetDiscard = (cardId: CardId) => {
-    setIsHandSheetOpen(false);
-    onDiscard(cardId);
-  };
-
   // ★ 「引いたカードが手札ボタンへ飛んでいく」演出
   const handFabRef = useRef<HTMLButtonElement | null>(null);
   const handSlotRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -173,30 +175,52 @@ export function GameBoardPage({
   }, []);
 
   // スマホ：右下の FAB／PC：手札の該当スロット、どちらに飛ばすか
-  const getFlightTargetRect = (slotIndex: number): FlightRect | null => {
+  const getFlightTarget = (
+    slotIndex: number
+  ): { rect: FlightRect; isFab: boolean } | null => {
     const fabEl = handFabRef.current;
     if (fabEl && window.getComputedStyle(fabEl).display !== "none") {
-      return rectOf(fabEl);
+      return { rect: rectOf(fabEl), isFab: true };
     }
     const slotEl = handSlotRefs.current[slotIndex];
-    return slotEl ? rectOf(slotEl) : null;
+    return slotEl ? { rect: rectOf(slotEl), isFab: false } : null;
   };
+
+  // ゴーストカードの着地サイズ・位置（targetRect の中央に、指定サイズで配置）
+  const fitRectInto = (
+    targetRect: FlightRect,
+    size: { width: number; height: number }
+  ): FlightRect => ({
+    left: targetRect.left + (targetRect.width - size.width) / 2,
+    top: targetRect.top + (targetRect.height - size.height) / 2,
+    width: size.width,
+    height: size.height,
+  });
 
   const startFlight = (
     cardId: CardId,
+    imgSrc: string,
     originEl: HTMLElement,
     slotIndex: number
   ) => {
-    const toRect = getFlightTargetRect(slotIndex);
-    if (!toRect) return; // 位置が取れない場合はアニメーションだけスキップ（動作自体は通常通り）
+    const target = getFlightTarget(slotIndex);
+    if (!target) return; // 位置が取れない場合はアニメーションだけスキップ（動作自体は通常通り）
 
     const fromRect = rectOf(originEl);
+
+    // スマホ（FABへ飛ぶ場合）は縮小、PC（手札スロットへ飛ぶ場合）は従来どおりスロットの大きさに合わせる
+    const toRect = target.isFab
+      ? fitRectInto(target.rect, {
+          width: fromRect.width * FLIGHT_SHRINK_SCALE,
+          height: fromRect.height * FLIGHT_SHRINK_SCALE,
+        })
+      : target.rect;
 
     if (flightTimeoutRef.current != null) window.clearTimeout(flightTimeoutRef.current);
     if (popTimeoutRef.current != null) window.clearTimeout(popTimeoutRef.current);
 
     setJustLandedCardId(null);
-    setFlyingCard({ cardId, from: fromRect, to: toRect, moving: false });
+    setFlyingCard({ cardId, imgSrc, from: fromRect, to: toRect, moving: false });
 
     // 1フレーム待ってから移動先の座標に切り替えることで、CSS transition が発火する
     requestAnimationFrame(() => {
@@ -219,7 +243,8 @@ export function GameBoardPage({
   const handleDeckDrawClick = (e: MouseEvent<HTMLButtonElement>) => {
     const topCardId = room.deck?.[0];
     if (topCardId != null) {
-      startFlight(topCardId, e.currentTarget, myHand.length);
+      // 山札から引く演出中は中身を見せず、山札の裏面のまま飛ばす
+      startFlight(topCardId, DECK_BACK_IMAGE_SRC, e.currentTarget, myHand.length);
     }
     onDrawFromDeck();
   };
@@ -230,8 +255,75 @@ export function GameBoardPage({
     cardIndex: number,
     cardId: CardId
   ) => {
-    startFlight(cardId, e.currentTarget, myHand.length);
+    // 捨て札から引く時も、山札から引く時と同じ裏面画像で飛ばす
+    startFlight(cardId, DECK_BACK_IMAGE_SRC, e.currentTarget, myHand.length);
     onDrawFromDiscard(fromPlayerId, cardIndex);
+  };
+
+  // ★ 「捨てたカードが自分の捨て札へ飛んでいく」演出
+  const discardColumnRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const discardFlightTimeoutRef = useRef<number | null>(null);
+  const discardPopTimeoutRef = useRef<number | null>(null);
+
+  const [flyingDiscard, setFlyingDiscard] = useState<FlyingCard | null>(null);
+  const [justDiscardedCardId, setJustDiscardedCardId] = useState<CardId | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (discardFlightTimeoutRef.current != null) window.clearTimeout(discardFlightTimeoutRef.current);
+      if (discardPopTimeoutRef.current != null) window.clearTimeout(discardPopTimeoutRef.current);
+    };
+  }, []);
+
+  const startDiscardFlight = (cardId: CardId, originEl: HTMLElement) => {
+    const targetEl = discardColumnRefs.current[myPlayerId];
+    if (!targetEl) return; // 位置が取れない場合はアニメーションだけスキップ（動作自体は通常通り）
+
+    const fromRect = rectOf(originEl);
+    // 捨て札は着地先の大きさに合わせず、元のカードの縮小サイズで飛ばす
+    const toRect = fitRectInto(rectOf(targetEl), {
+      width: fromRect.width * FLIGHT_SHRINK_SCALE,
+      height: fromRect.height * FLIGHT_SHRINK_SCALE,
+    });
+
+    if (discardFlightTimeoutRef.current != null) window.clearTimeout(discardFlightTimeoutRef.current);
+    if (discardPopTimeoutRef.current != null) window.clearTimeout(discardPopTimeoutRef.current);
+
+    setJustDiscardedCardId(null);
+    setFlyingDiscard({ cardId, imgSrc: getCardImageUrl(cardId), from: fromRect, to: toRect, moving: false });
+
+    // 1フレーム待ってから移動先の座標に切り替えることで、CSS transition が発火する
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setFlyingDiscard((prev) => (prev ? { ...prev, moving: true } : prev));
+      });
+    });
+
+    discardFlightTimeoutRef.current = window.setTimeout(() => {
+      setFlyingDiscard(null);
+      setJustDiscardedCardId(cardId);
+
+      discardPopTimeoutRef.current = window.setTimeout(() => {
+        setJustDiscardedCardId(null);
+      }, POP_MS);
+    }, FLIGHT_MS);
+  };
+
+  const handleHandCardDiscardClick = (
+    e: MouseEvent<HTMLButtonElement>,
+    cardId: CardId
+  ) => {
+    startDiscardFlight(cardId, e.currentTarget);
+    onDiscard(cardId);
+  };
+
+  const handleSheetDiscardClick = (
+    e: MouseEvent<HTMLButtonElement>,
+    cardId: CardId
+  ) => {
+    startDiscardFlight(cardId, e.currentTarget);
+    setIsHandSheetOpen(false);
+    onDiscard(cardId);
   };
 
   // 捨てフェーズに入った瞬間だけ自動で開く（その後は手動で開閉できる）
@@ -321,31 +413,35 @@ export function GameBoardPage({
               <div className="gb-deck-count">残り {deckCount} 枚</div>
             </div>
 
-              {/* ★ 画像ボタン版の山札 */}
-              <button
-                type="button"
-                className={
-                  "gb-deck-image-wrapper" +
-                  (canDraw && deckCount > 0 ? " gb-deck-image-wrapper--active" : "")
-                }
-                onClick={handleDeckDrawClick}
-                disabled={!canDraw || deckCount === 0}
-              >
-                <img
-                  src="/images/deck_ryugakusai.png"          // ★ 山札画像（好きなパスに変えてOK）
-                  alt="山札"
-                  className="gb-deck-image"
-                />
-                {/* ホバー時に出る白エフェクト＋手アイコン */}
-                <div className="gb-deck-image-overlay">
-                  <div className="gb-deck-overlay-label">一枚引く</div>
+              {/* ★ 画像ボタン版の山札（カードが重なっているように見せる） */}
+              <div className="gb-deck-stack">
+                <div className="gb-deck-stack-layer gb-deck-stack-layer--back" aria-hidden="true" />
+                <div className="gb-deck-stack-layer gb-deck-stack-layer--mid" aria-hidden="true" />
+                <button
+                  type="button"
+                  className={
+                    "gb-deck-image-wrapper" +
+                    (canDraw && deckCount > 0 ? " gb-deck-image-wrapper--active" : "")
+                  }
+                  onClick={handleDeckDrawClick}
+                  disabled={!canDraw || deckCount === 0}
+                >
                   <img
-                    src="/images/hand-pick-yellow.png"   // ★ 手のアイコン画像
-                    alt=""
-                    className="gb-deck-hand-icon"
+                    src="/images/deck_ryugakusai.webp"          // ★ 山札画像（好きなパスに変えてOK）
+                    alt="山札"
+                    className="gb-deck-image"
                   />
-                </div>
-              </button>
+                  {/* ホバー時に出る白エフェクト＋手アイコン */}
+                  <div className="gb-deck-image-overlay">
+                    <div className="gb-deck-overlay-label">一枚引く</div>
+                    <img
+                      src="/images/hand-pick-yellow.webp"   // ★ 手のアイコン画像
+                      alt=""
+                      className="gb-deck-hand-icon"
+                    />
+                  </div>
+                </button>
+              </div>
             </section>
 
           {/* 捨て札ゾーン */}
@@ -359,6 +455,9 @@ export function GameBoardPage({
                 return (
                   <div
                     key={p.id}
+                    ref={(el) => {
+                      discardColumnRefs.current[p.id] = el;
+                    }}
                     className={
                       "gb-discard-column" +
                       (isActive ? " gb-discard-column--active" : "")
@@ -384,12 +483,17 @@ export function GameBoardPage({
                           .map(({ cardId, originalIndex }) => {
                         const cardName = getCardName(cardId);
                         const canPick = canDraw && playerDiscards.length > 0;
+                        const isJustDiscarded =
+                          p.id === myPlayerId && justDiscardedCardId === cardId;
 
                         return (
                           <button
                             key={`${cardId}-${originalIndex}`}
                             type="button"
-                            className="gb-discard-card"
+                            className={
+                              "gb-discard-card" +
+                              (isJustDiscarded ? " gb-discard-card--pop" : "")
+                            }
                             onClick={(e) =>
                               handleDiscardDrawClick(e, p.id, originalIndex, cardId)
                             }
@@ -442,11 +546,13 @@ export function GameBoardPage({
           // 飛んでいる最中のカードは、着地演出と入れ替わるまで実体を隠す
           const isIncoming = flyingCard?.cardId === cardId;
           const isJustLanded = justLandedCardId === cardId;
+          // 捨てるために手札から飛び出していく最中も同様に隠す
+          const isOutgoing = flyingDiscard?.cardId === cardId;
 
           // ★ 中身あり：スロットの中にボタン
           return (
             <div key={slotKey} ref={setSlotRef} className="gb-hand-card-slot">
-              {!isIncoming && (
+              {!isIncoming && !isOutgoing && (
                 <button
                   type="button"
                   className={
@@ -454,7 +560,7 @@ export function GameBoardPage({
                     (canDiscard ? " gb-hand-card-button--discardable" : "") +
                     (isJustLanded ? " gb-hand-card-button--pop" : "")
                   }
-                  onClick={() => onDiscard(cardId)}
+                  onClick={(e) => handleHandCardDiscardClick(e, cardId)}
                   disabled={!canDiscard}
                 >
                   <img
@@ -496,7 +602,7 @@ export function GameBoardPage({
       {/* ★ 引いたカードが飛んでいく演出用のゴースト */}
       {flyingCard && (
         <img
-          src={getCardImageUrl(flyingCard.cardId)}
+          src={flyingCard.imgSrc}
           alt=""
           aria-hidden="true"
           className="gb-flying-card"
@@ -506,6 +612,23 @@ export function GameBoardPage({
             width: (flyingCard.moving ? flyingCard.to.width : flyingCard.from.width) + "px",
             height: (flyingCard.moving ? flyingCard.to.height : flyingCard.from.height) + "px",
             opacity: flyingCard.moving ? 0.1 : 1,
+          }}
+        />
+      )}
+
+      {/* ★ 捨てたカードが飛んでいく演出用のゴースト */}
+      {flyingDiscard && (
+        <img
+          src={flyingDiscard.imgSrc}
+          alt=""
+          aria-hidden="true"
+          className="gb-flying-card"
+          style={{
+            left: (flyingDiscard.moving ? flyingDiscard.to.left : flyingDiscard.from.left) + "px",
+            top: (flyingDiscard.moving ? flyingDiscard.to.top : flyingDiscard.from.top) + "px",
+            width: (flyingDiscard.moving ? flyingDiscard.to.width : flyingDiscard.from.width) + "px",
+            height: (flyingDiscard.moving ? flyingDiscard.to.height : flyingDiscard.from.height) + "px",
+            opacity: flyingDiscard.moving ? 0.1 : 1,
           }}
         />
       )}
@@ -573,7 +696,7 @@ export function GameBoardPage({
                       (canDiscard ? " gb-sheet-card--discardable" : "") +
                       (isJustLanded ? " gb-sheet-card--pop" : "")
                     }
-                    onClick={() => handleSheetDiscard(cardId)}
+                    onClick={(e) => handleSheetDiscardClick(e, cardId)}
                     disabled={!canDiscard}
                   >
                     <img
