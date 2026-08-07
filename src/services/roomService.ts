@@ -45,6 +45,7 @@ import {
           hostId: playerId,
           status: "waiting" as const,
           cardCount,
+          turnTimerSeconds: 15,
           players: {
             [playerId]: { name: playerName, joinedAt: now },
           },
@@ -77,6 +78,7 @@ import {
         hostId: playerId,
         status: "waiting",
         cardCount,
+        turnTimerSeconds: 15,
         players: {
           [playerId]: { name: playerName, joinedAt: now },
         },
@@ -243,6 +245,51 @@ export async function discardCardAndAdvanceTurn(
 
     tx.update(roomRef, {
       ...update,
+      updatedAt: serverTimestamp(),
+    });
+  });
+}
+
+export async function skipPlayerTurn(roomCode: string, hostPlayerId: string) {
+  const trimmedCode = roomCode.trim().toUpperCase();
+  const roomRef = doc(db, "rooms", trimmedCode);
+
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(roomRef);
+    if (!snap.exists()) throw new Error("ルームが存在しません。");
+
+    const room = snap.data() as Room;
+    if (room.hostId !== hostPlayerId) {
+      throw new Error("ホストのみがスキップを実行できます。");
+    }
+
+    const activePlayerId = room.activePlayerId;
+    if (!activePlayerId) return;
+
+    // 引いた後 (discardフェーズ) で手札が6枚以上の場合は最後のカードを捨てて進める
+    if (room.turnPhase === "discard") {
+      const hand = room.hands?.[activePlayerId] ?? [];
+      if (hand.length > 5) {
+        const lastCard = hand[hand.length - 1];
+        const update = applyDiscardAndAdvance(room, activePlayerId, "deck", lastCard, null);
+        tx.update(roomRef, {
+          ...update,
+          updatedAt: serverTimestamp(),
+        });
+        return;
+      }
+    }
+
+    // 引く前 (drawフェーズ) の場合はそのまま次のプレイヤーへ交代
+    const order = room.turnOrder ?? [];
+    const currentIndex = order.indexOf(activePlayerId);
+    const nextIndex = order.length > 0 ? (currentIndex + 1) % order.length : 0;
+    const nextPlayerId = order[nextIndex];
+
+    tx.update(roomRef, {
+      activePlayerId: nextPlayerId,
+      turnPhase: "draw",
+      turnIndex: (room.turnIndex ?? 0) + 1,
       updatedAt: serverTimestamp(),
     });
   });

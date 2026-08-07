@@ -1,5 +1,16 @@
 import { ComposeSpec } from "../imageComposer";
 
+// タイプ名の枠(ピル)は幅が固定なので、文字数が多いほどフォントを小さくして収める
+function typeNameFontSize(text: string): number {
+  const len = [...text].length;
+  if (len <= 3) return 32;
+  if (len === 4) return 30;
+  if (len === 5) return 28;
+  if (len === 6) return 26;
+  if (len === 7) return 24;
+  return 22; // 8文字（今のところの最長）
+}
+
 export function makeValueSheetSpec(params: {
   templatePath: string;
   playerName: string;
@@ -15,10 +26,12 @@ export function makeValueSheetSpec(params: {
   const W = params.canvasWidth;
   const H = params.canvasHeight;
 
-  const CARD_WIDTH = 228;
+  // テンプレート画像上のカード枠(角丸スロット)の実測値に合わせている
+  const CARD_WIDTH = 240;
   const CARD_HEIGHT = 320;
-  const CARD_TOP = 604;
-  const CARD_LEFT_START = 47;
+  const CARD_TOP = 600;
+  const CARD_LEFT_START = 40;
+  const CARD_RADIUS = 20;
   const CARD_GAP = (W - (CARD_LEFT_START * 2 + CARD_WIDTH * 5)) / 4;
   const lines = params.analysisText.split(/\r?\n/).filter(line => line.trim() !== "");
   const lineCount = lines.length;
@@ -32,7 +45,10 @@ export function makeValueSheetSpec(params: {
       top: CARD_TOP,
       width: CARD_WIDTH,
       height: CARD_HEIGHT,
-      fit: "contain" as const,
+      // 枠(240x320)とカード画像本体(1080x1350=4:5)のアスペクト比が違うため、
+      // contain だと余白ができる。cover で枠いっぱいに敷き詰めて角丸でトリムする。
+      fit: "cover" as const,
+      borderRadius: CARD_RADIUS,
     };
   });
 
@@ -63,7 +79,7 @@ export function makeValueSheetSpec(params: {
   const knobsLayers = params.valueTypeScores.slice(0, 4).map((score, index) => {
     return {
       type: "image" as const,
-      gsPath: `assets/templates/slider_knobs/knob_${colors[index]}.png`,
+      gsPath: `assets/template/silider_knobs/knob_${colors[index]}.png`,
       left: Math.round(KNOB_LEFT_START + score * KNOB_UNIT),
       top: KNOB_TOP + index * (KNOB_GAP),
       fit: "cover" as const,
@@ -129,20 +145,52 @@ export function makeValueSheetSpec(params: {
         fontWeight: 800,
       },
 
-      // 価値観タイプ
-      {
-        type: "text",
-        text: params.valueType[1],
-        left: 725,
-        top: 1595,
-        width: 320,
-        height: 90,
-        fontSize: 25,
-        align: "center",
-        fill: "#38b6ff",
-        stroke: "#ffffff",
-        fontWeight: 600,
-      },
+      // 価値観タイプ：グループ+具体名の2行を、テンプレート側のピル帯の
+      // 縦センター付近に来るよう2行分の高さから逆算して配置
+      // (実測センターは約1634pxだが、見た目のバランスを見て少し上に寄せている)
+      ...(() => {
+        const PILL_CENTER_Y = 1626;
+        const GROUP_FONT_SIZE = 18;
+        const LINE_GAP = 8;
+        const nameFontSize = typeNameFontSize(params.valueType[2]);
+        const blockHeight = GROUP_FONT_SIZE + LINE_GAP + nameFontSize;
+        const groupTop = Math.round(PILL_CENTER_Y - blockHeight / 2);
+        const nameTop = groupTop + GROUP_FONT_SIZE + LINE_GAP;
+
+        return [
+          // グループ（開拓/堅実/変革/満喫タイプ、小さく上段）
+          {
+            type: "text" as const,
+            text: params.valueType[1],
+            left: 725,
+            top: groupTop,
+            width: 320,
+            height: GROUP_FONT_SIZE + 10,
+            fontSize: GROUP_FONT_SIZE,
+            align: "center" as const,
+            fill: "#38b6ff",
+            stroke: "#ffffff",
+            strokeWidth: 3,
+            fontWeight: 600,
+          },
+          // 具体的なタイプ名（大きく強調して下段）
+          // 枠(ピル)からはみ出さないよう、文字数が多いほどフォントサイズを落とす
+          {
+            type: "text" as const,
+            text: params.valueType[2],
+            left: 725,
+            top: nameTop,
+            width: 320,
+            height: nameFontSize + 10,
+            fontSize: nameFontSize,
+            align: "center" as const,
+            fill: "#38b6ff",
+            stroke: "#ffffff",
+            strokeWidth: 5,
+            fontWeight: 800,
+          },
+        ];
+      })(),
 
       ...sliderLabelLayers,
 

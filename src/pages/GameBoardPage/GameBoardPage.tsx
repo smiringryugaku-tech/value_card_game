@@ -71,15 +71,17 @@ export function GameBoardPage({
   const canDiscard = isMyTurn && phase === "discard";
 
   const [isTimerDialogOpen, setIsTimerDialogOpen] = useState(false);
-  const [timerOn, setTimerOn] = useState<boolean>(!!room.turnTimerSeconds);
+  const [timerOn, setTimerOn] = useState<boolean>(
+    room.turnTimerSeconds != null ? room.turnTimerSeconds > 0 : true
+  );
   const [timerSecondsInput, setTimerSecondsInput] = useState<string>(
-    room.turnTimerSeconds != null ? String(room.turnTimerSeconds) : "30"
+    room.turnTimerSeconds != null ? String(room.turnTimerSeconds) : "15"
   );
 
   useEffect(() => {
-    setTimerOn(!!room.turnTimerSeconds);
+    setTimerOn(room.turnTimerSeconds != null ? room.turnTimerSeconds > 0 : true);
     setTimerSecondsInput(
-      room.turnTimerSeconds != null ? String(room.turnTimerSeconds) : "30"
+      room.turnTimerSeconds != null ? String(room.turnTimerSeconds) : "15"
     );
   }, [room.turnTimerSeconds]);
 
@@ -145,6 +147,13 @@ export function GameBoardPage({
     const full = turnTimerSeconds;
     setRemainingSeconds(full);
 
+    // ★ 最初のターンの人は、最初のカードを引く（phase === "draw"）までタイマーを開始しない
+    const isFirstTurnBeforeDraw =
+      (room.turnIndex === 0 || room.turnIndex === undefined) && phase === "draw";
+    if (isFirstTurnBeforeDraw) {
+      return;
+    }
+
     const start = Date.now();
     const id = window.setInterval(() => {
       const elapsed = Math.floor((Date.now() - start) / 1000);
@@ -153,7 +162,7 @@ export function GameBoardPage({
     }, 300);
 
     return () => window.clearInterval(id);
-  }, [activePlayerId, room.turnIndex, turnTimerSeconds]);
+  }, [activePlayerId, room.turnIndex, turnTimerSeconds, phase]);
 
   // ★ スマホ用：手札ボトムシート
   const [isHandSheetOpen, setIsHandSheetOpen] = useState(canDiscard);

@@ -160,21 +160,22 @@ async function handleAnalyzeWithGemini(data: any) {
     const valueTypeAlphabet = `${CL >= 50 ? "L" : "C"}${AS >= 50 ? "S" : "A"}${UN >= 50 ? "N" : "U"}${IT >= 50 ? "T" : "I"}`;
 
     const typeNames: Record<string, string> = {
-      AAUI: "アントレプレナー", AAUT: "リーダー",
-      AANI: "リサーチャー",    AANT: "パイオニア",
-      ASUI: "ストラテジスト",  ASUT: "マネージャー",
-      ASNI: "スペシャリスト",  ASNT: "ワーカー",
+      CAUI: "アントレプレナー", CAUT: "リーダー",
+      CANI: "リサーチャー",    CANT: "パイオニア",
+      CSUI: "ストラテジスト",  CSUT: "マネージャー",
+      CSNI: "スペシャリスト",  CSNT: "ワーカー",
       LAUI: "アーティスト",    LAUT: "インフルエンサー",
       LANI: "バックパッカー",  LANT: "エクスプローラー",
       LSUI: "ソロツアラー",    LSUT: "プロデューサー",
       LSNI: "ヒーラー",        LSNT: "ゲスト",
     };
     const typeGroups: Record<string, string> = {
-      AA: "開拓タイプ", AS: "堅実タイプ", LA: "変革タイプ", LS: "満喫タイプ",
+      CA: "開拓タイプ", CS: "堅実タイプ", LA: "変革タイプ", LS: "満喫タイプ",
     };
     const typeName = typeNames[valueTypeAlphabet] ?? "留学タイプ";
     const typeGroup = typeGroups[valueTypeAlphabet.slice(0, 2)] ?? "";
-    const typeLabel = `${typeGroup}\n${typeName}`;
+    // 上段(小さく): 開拓/堅実/変革/満喫タイプ、下段(大きく強調): 具体的なタイプ名
+    const typeLabel = typeGroup ? `${typeGroup}\n${typeName}` : typeName;
 
     const finalHandCardNames = finalHandCardIds.map(
       (id) => cardDict[id]?.japanese ?? `カード ${id}`
@@ -223,6 +224,12 @@ async function handleBuildValueSheet(data: any) {
     const W = 1350;
     const H = 2400;
 
+    // typeLabel は "グループ(開拓/堅実/変革/満喫タイプ)\n具体的なタイプ名" の形。
+    // グループが無い(フォールバック)場合は具体名のみの1行。
+    const [typeGroupPart, typeNamePart] = typeLabel.includes("\n")
+      ? typeLabel.split("\n")
+      : ["", typeLabel];
+
     const spec = makeValueSheetSpec({
       templatePath: TEMPLATE_PATH,
       playerName,
@@ -230,7 +237,7 @@ async function handleBuildValueSheet(data: any) {
       finalHandCardIds,
       analysisText: analysis,
       finalHandCardNames,
-      valueType: [valueTypeAlphabet, typeLabel],
+      valueType: [valueTypeAlphabet, typeGroupPart, typeNamePart],
       valueTypeScores,
       canvasWidth: W,
       canvasHeight: H,

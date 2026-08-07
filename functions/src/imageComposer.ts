@@ -204,6 +204,8 @@ export async function composeImage(spec: ComposeSpec): Promise<Buffer> {
       if (targetWidth || targetHeight) {
         img = img.resize(targetWidth, targetHeight, {
           fit: layer.fit ?? "contain",
+          // contain で余白ができた場合、sharpのデフォルト(不透明黒)ではなく透明で埋める
+          background: { r: 0, g: 0, b: 0, alpha: 0 },
         });
       }
 

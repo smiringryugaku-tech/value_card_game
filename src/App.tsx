@@ -14,6 +14,7 @@ import {
   drawFromDeck,
   drawFromDiscardPile,
   discardCardAndAdvanceTurn,
+  skipPlayerTurn,
 } from "./services/roomService";
 import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { db } from "./firebase";
@@ -201,27 +202,10 @@ function App() {
   }
 
   const handleSkipPlayer = async () => {
-    // 基本的なガード
-    if (!room) return;
-    if (!room.activePlayerId) return;
-    if (!isHost) return;                   // 念のためホストだけ
-    if (playerId && room.hostId !== playerId) return;
-  
-    // プレイヤー順序は players の並びを前提
-    const order = players.map((p) => p.id);
-    const currentIndex = order.indexOf(room.activePlayerId);
-    if (currentIndex === -1) return;
-  
-    const nextIndex = (currentIndex + 1) % order.length;
-    const nextPlayerId = order[nextIndex];
-  
+    if (!room || !playerId || !isHost) return;
+
     try {
-      const ref = doc(db, "rooms", room.code);
-      await updateDoc(ref, {
-        activePlayerId: nextPlayerId,
-        turnPhase: "draw",                 // 次の人は draw からスタート
-        turnIndex: (room.turnIndex ?? 0) + 1, // もし turnIndex があればインクリメント
-      });
+      await skipPlayerTurn(room.code, playerId);
     } catch (err) {
       console.error("プレイヤースキップの更新に失敗:", err);
       alert("プレイヤーのスキップに失敗しました。もう一度試してください。");
