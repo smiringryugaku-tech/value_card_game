@@ -29,6 +29,7 @@ type FlyingCard = {
   from: FlightRect;
   to: FlightRect;
   moving: boolean;
+  targetSlotIndex?: number;
 };
 
 function rectOf(el: Element): FlightRect {
@@ -229,7 +230,7 @@ export function GameBoardPage({
     if (popTimeoutRef.current != null) window.clearTimeout(popTimeoutRef.current);
 
     setJustLandedCardId(null);
-    setFlyingCard({ cardId, imgSrc, from: fromRect, to: toRect, moving: false });
+    setFlyingCard({ cardId, imgSrc, from: fromRect, to: toRect, moving: false, targetSlotIndex: slotIndex });
 
     // 1フレーム待ってから移動先の座標に切り替えることで、CSS transition が発火する
     requestAnimationFrame(() => {
@@ -552,8 +553,9 @@ export function GameBoardPage({
             );
           }
 
-          // 飛んでいる最中のカードは、着地演出と入れ替わるまで実体を隠す
-          const isIncoming = flyingCard?.cardId === cardId;
+          // 飛んでいる最中のカードは、着地演出と入れ替わるまで実体を隠す（スロット位置も一致する場合のみ）
+          const isIncoming =
+            flyingCard?.cardId === cardId && flyingCard?.targetSlotIndex === slotIndex;
           const isJustLanded = justLandedCardId === cardId;
           // 捨てるために手札から飛び出していく最中も同様に隠す
           const isOutgoing = flyingDiscard?.cardId === cardId;

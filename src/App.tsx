@@ -8,6 +8,13 @@ import { ResultPage } from "./pages/ResultPage/ResultPage";
 import type { CardFrom, CardId, Mode, Player, Room, Screen } from "./types";
 import { getOrCreatePlayerId } from "./utils/playerId";
 import {
+  getSavedPlayerName,
+  savePlayerName,
+  getSavedRoomCode,
+  saveRoomCode,
+  clearSavedRoomCode,
+} from "./utils/session";
+import {
   createRoom,
   joinRoom,
   startGameInRoom,
@@ -16,7 +23,7 @@ import {
   discardCardAndAdvanceTurn,
   skipPlayerTurn,
 } from "./services/roomService";
-import { doc, onSnapshot, updateDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { warmupBackend } from "./api/analyze";
 
@@ -26,6 +33,9 @@ function App() {
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode | null>(null);
   const [roomCode, setRoomCode] = useState("");
+
+  const [previousRoomCode, setPreviousRoomCode] = useState<string | null>(null);
+  const [invitedRoomCode, setInvitedRoomCode] = useState<string | null>(null);
 
   const [isInRoom, setIsInRoom] = useState(false);
 
@@ -53,15 +63,105 @@ function App() {
   useEffect(() => {
     const id = getOrCreatePlayerId();
     setPlayerId(id);
+
+    // 1. URLパラメータから ?room=... を取得
+    const params = new URLSearchParams(window.location.search);
+    const roomParam = params.get("room")?.trim().toUpperCase();
+    if (roomParam) {
+      setInvitedRoomCode(roomParam);
+    }
+
+    // 2. 保存された名前を復元
+    const savedName = getSavedPlayerName();
+    if (savedName) {
+      setPlayerName(savedName);
+    }
+
+    // 3. 保存されたルームコードを検証
+    const savedRoom = getSavedRoomCode();
+    if (savedRoom && id) {
+      const roomRef = doc(db, "rooms", savedRoom);
+      getDoc(roomRef)
+        .then((snap) => {
+          if (snap.exists()) {
+            const roomData = snap.data() as Room;
+            const updated = roomData.updatedAt;
+            const updatedMs =
+              updated && typeof (updated as any).toMillis === "function"
+                ? (updated as any).toMillis()
+                : 0;
+            const isNotStale = Date.now() - updatedMs < 60 * 60 * 1000;
+            const isJoined = !!roomData.players?.[id];
+
+            if (isNotStale && isJoined) {
+              setPreviousRoomCode(savedRoom);
+              return;
+            }
+          }
+          clearSavedRoomCode();
+        })
+        .catch((err) => {
+          console.warn("前回のルーム情報の取得に失敗:", err);
+          clearSavedRoomCode();
+        });
+    }
   }, []);
 
-  const handleTitleSubmit = (name: string, selectedMode: Mode) => {
+  const executeJoinRoom = async (codeToJoin: string, nameToUse: string) => {
+    if (!playerId) return;
+    setErrorMessage(null);
+    checkAndWarmupBackend();
+
+    const trimmedCode = codeToJoin.trim().toUpperCase();
+    try {
+      const joinedRoom = await joinRoom(trimmedCode, playerId, nameToUse);
+      setRoom(joinedRoom);
+      setCardCount(joinedRoom.cardCount);
+      setRoomCode(trimmedCode);
+      setIsInRoom(true);
+
+      savePlayerName(nameToUse);
+      saveRoomCode(trimmedCode);
+
+      setIsHost(joinedRoom.hostId === playerId);
+      setScreen("lobby");
+
+      // クエリパラメータをブラウザ履歴から削除
+      if (window.location.search) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setErrorMessage(err.message);
+      } else {
+        setErrorMessage("不明なエラーが発生しました。");
+      }
+      setScreen("roomSetup");
+    }
+  };
+
+  const handleTitleSubmit = async (name: string, selectedMode: Mode) => {
     setPlayerName(name);
+    savePlayerName(name);
     setMode(selectedMode);
     setIsHost(selectedMode === "create");
+    setErrorMessage(null);
+
+    // 招待URL経由で入室する場合、コード入力画面をスキップ
+    if (selectedMode === "join" && invitedRoomCode) {
+      await executeJoinRoom(invitedRoomCode, name);
+      return;
+    }
+
     setRoomCode("");
     setScreen("roomSetup");
-    setErrorMessage(null);
+  };
+
+  const handleRejoinPreviousRoom = async (name: string) => {
+    if (!previousRoomCode) return;
+    setPlayerName(name);
+    savePlayerName(name);
+    await executeJoinRoom(previousRoomCode, name);
   };
 
   const handleRoomSubmit = async () => {
@@ -90,6 +190,9 @@ function App() {
       setRoomCode(trimmedCode);
       setIsInRoom(true);
 
+      savePlayerName(playerName);
+      saveRoomCode(trimmedCode);
+
       setScreen("lobby");
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -101,11 +204,16 @@ function App() {
   };
 
   const handleBackFromRoom = () => {
+    clearSavedRoomCode();
+    setPreviousRoomCode(null);
     setScreen("title");
     setRoomCode("");
     setRoom(null);
     setPlayers([]);
     setIsInRoom(false);
+    if (window.location.search) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   };
 
   const handleCardCountChange = async (nextCount: number) => {
@@ -213,28 +321,25 @@ function App() {
   };
 
   const handlePlayAgainFromResult = () => {
-    // ルームから一旦抜けた扱いにする
+    clearSavedRoomCode();
+    setPreviousRoomCode(null);
     setIsInRoom(false);
     setRoom(null);
     setPlayers([]);
-  
-    // ルームコードはリセット（同じコードを使いたいなら残してもOK）
     setRoomCode("");
-  
-    // エラーもリセットしておく
     setErrorMessage(null);
-  
-    // ルームセットアップ画面へ
     setScreen("title");
+    if (window.location.search) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   };
   
   useEffect(() => {
     if (!roomCode || !isInRoom) return;
-  
+
     const ref = doc(db, "rooms", roomCode.trim().toUpperCase());
-    const unsubscribe = onSnapshot(ref, (snap) => {
-      if (!snap.exists()) return;
-      const data = snap.data() as Room;
+
+    const processRoomSnapData = (data: Room) => {
       setRoom(data);
 
       const playersMap = data.players ?? {};
@@ -249,7 +354,7 @@ function App() {
 
       setPlayers(list);
       setCardCount(data.cardCount);
-  
+
       // ★ Room の status に応じて画面を切り替える
       if (data.status === "playing") {
         setScreen("game");
@@ -258,9 +363,51 @@ function App() {
       } else {
         setScreen("lobby");
       }
+    };
+
+    // 1. リアルタイムリスナー (onSnapshot)
+    const unsubscribe = onSnapshot(ref, (snap) => {
+      if (!snap.exists()) return;
+      processRoomSnapData(snap.data() as Room);
     });
-  
-    return () => unsubscribe();
+
+    // 2. 5秒間隔のスマートポーリング（画面が表示されている場合のみ補正）
+    const pollingId = setInterval(async () => {
+      if (document.visibilityState === "visible") {
+        try {
+          const snap = await getDoc(ref);
+          if (snap.exists()) {
+            processRoomSnapData(snap.data() as Room);
+          }
+        } catch (err) {
+          console.warn("[Polling] 補正データの取得に失敗:", err);
+        }
+      }
+    }, 5000);
+
+    // 3. 画面復帰時・フォーカス時の即時同期
+    const handleSyncOnActive = async () => {
+      if (document.visibilityState === "visible") {
+        try {
+          const snap = await getDoc(ref);
+          if (snap.exists()) {
+            processRoomSnapData(snap.data() as Room);
+          }
+        } catch (err) {
+          console.warn("[Sync] 復帰時データの同期に失敗:", err);
+        }
+      }
+    };
+
+    window.addEventListener("visibilitychange", handleSyncOnActive);
+    window.addEventListener("focus", handleSyncOnActive);
+
+    return () => {
+      unsubscribe();
+      clearInterval(pollingId);
+      window.removeEventListener("visibilitychange", handleSyncOnActive);
+      window.removeEventListener("focus", handleSyncOnActive);
+    };
   }, [roomCode, isInRoom]);
 
   useEffect(() => {
@@ -281,7 +428,15 @@ function App() {
   const isFixedLayout = screen === "game";
 
   if (screen === "title") {
-    content = <TitlePage onSubmit={handleTitleSubmit} />;
+    content = (
+      <TitlePage
+        onSubmit={handleTitleSubmit}
+        initialPlayerName={playerName}
+        previousRoomCode={previousRoomCode}
+        invitedRoomCode={invitedRoomCode}
+        onRejoinPreviousRoom={handleRejoinPreviousRoom}
+      />
+    );
   }
 
   else if (screen === "roomSetup" && mode) {

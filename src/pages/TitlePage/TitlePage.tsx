@@ -1,19 +1,41 @@
 // src/pages/TitlePage/TitlePage.tsx
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Mode } from "../../types";
 import "./TitlePage.css";
 
 type TitlePageProps = {
   onSubmit: (playerName: string, mode: Mode) => void;
+  initialPlayerName?: string;
+  previousRoomCode?: string | null;
+  invitedRoomCode?: string | null;
+  onRejoinPreviousRoom?: (playerName: string) => void;
 };
 
-export function TitlePage({ onSubmit }: TitlePageProps) {
-  const [playerName, setPlayerName] = useState("");
+export function TitlePage({
+  onSubmit,
+  initialPlayerName = "",
+  previousRoomCode,
+  invitedRoomCode,
+  onRejoinPreviousRoom,
+}: TitlePageProps) {
+  const [playerName, setPlayerName] = useState(initialPlayerName);
+
+  useEffect(() => {
+    if (initialPlayerName) {
+      setPlayerName(initialPlayerName);
+    }
+  }, [initialPlayerName]);
 
   const handleChooseMode = (mode: Mode) => {
     const trimmed = playerName.trim();
     if (!trimmed) return;
     onSubmit(trimmed, mode);
+  };
+
+  const handleRejoin = () => {
+    const trimmed = playerName.trim();
+    if (!trimmed || !onRejoinPreviousRoom) return;
+    onRejoinPreviousRoom(trimmed);
   };
 
   const disabled = playerName.trim().length === 0;
@@ -47,6 +69,13 @@ export function TitlePage({ onSubmit }: TitlePageProps) {
           <p className="title-sub">あなたの留学における大切な要素を見つけよう！</p>
         </div>
 
+        {/* 招待バナー */}
+        {invitedRoomCode && (
+          <div className="title-invite-banner">
+            📩 ルーム「<strong>{invitedRoomCode}</strong>」への招待届いています！
+          </div>
+        )}
+
         {/* 中央付近：プレイヤー名入力 + モード選択ボタン */}
         <div className="title-form-block">
           <label className="title-name-label">
@@ -64,6 +93,18 @@ export function TitlePage({ onSubmit }: TitlePageProps) {
             />
           </label>
 
+          {/* 前回のルームに戻るボタン */}
+          {previousRoomCode && onRejoinPreviousRoom && (
+            <button
+              type="button"
+              className="title-rejoin-button"
+              disabled={disabled}
+              onClick={handleRejoin}
+            >
+              🔄 前回のルームに戻る [{previousRoomCode}]
+            </button>
+          )}
+
           <div className="title-mode-buttons">
             <button
               type="button"
@@ -79,7 +120,7 @@ export function TitlePage({ onSubmit }: TitlePageProps) {
               disabled={disabled}
               onClick={() => handleChooseMode("join")}
             >
-              🚪 ルームに入る
+              🚪 {invitedRoomCode ? `ルーム[${invitedRoomCode}]に参加` : "ルームに入る"}
             </button>
           </div>
         </div>

@@ -88,7 +88,7 @@
   text-align: center;
   box-sizing: border-box;
   background-color: #fffdf7;
-  margin-bottom: 3rem;
+  margin-bottom: 0.5rem;
 }
 
 .title-name-input:focus {
@@ -143,6 +143,44 @@
   opacity: 0.5;
   cursor: default;
   box-shadow: none;
+}
+
+.title-rejoin-button {
+  width: min(320px, 80vw);
+  padding: 0.75rem 1.2rem;
+  border-radius: 12px;
+  border: 2px solid #e67e22;
+  background: linear-gradient(135deg, #ff9f43, #ee5253);
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(238, 82, 83, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  margin-bottom: 0.5rem;
+}
+
+.title-rejoin-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(238, 82, 83, 0.4);
+}
+
+.title-rejoin-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+  box-shadow: none;
+}
+
+.title-invite-banner {
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  color: #856404;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  text-align: center;
+  width: min(320px, 80vw);
+  box-sizing: border-box;
 }
 
 /* スマホで少し詰める */

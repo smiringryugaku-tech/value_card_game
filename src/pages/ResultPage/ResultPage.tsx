@@ -39,7 +39,6 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [analysisImageUrl, setAnalysisImageUrl] = useState<string | null>(null);
   const [analysisImagePath, setAnalysisImagePath] = useState<string | null>(null);
-  const [analysisText, setAnalysisText] = useState<string | null>(null);
 
   const roomId = (room as any).id ?? (room as any).code;
 
@@ -123,7 +122,6 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
 
       setAnalysisImageUrl(step2.imageUrl);
       setAnalysisImagePath(step2.imagePath);
-      setAnalysisText(step2.result?.analysis ?? null);
       setAnalyzePhase("done");
       setIsModalOpen(true);
     } catch (e: any) {
@@ -147,17 +145,22 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
     analyzePhase === "phase2" ? PHASE2_MESSAGES[msgIndex] :
     null;
 
-  const handleDownload = async () => {
+  const handleOpenFullScreen = async () => {
     try {
-      if (!analysisImagePath) return;
-      const filename = `value_sheet_${roomId}_${myPlayerId}.png`;
-      const res = await getValueSheetDownloadUrl(analysisImagePath, filename);
-      const url = res.url;
-      if (!url) throw new Error("download url missing");
-      const w = window.open(url, "_blank", "noopener,noreferrer");
-      if (!w) window.location.assign(url);
+      let targetUrl = analysisImageUrl;
+      if (!targetUrl && analysisImagePath) {
+        const filename = `value_sheet_${roomId}_${myPlayerId}.png`;
+        const res = await getValueSheetDownloadUrl(analysisImagePath, filename);
+        targetUrl = res.url;
+      }
+      if (!targetUrl) throw new Error("画像URLが取得できませんでした。");
+
+      const win = window.open(targetUrl, "_blank", "noopener,noreferrer");
+      if (!win) {
+        window.location.assign(targetUrl);
+      }
     } catch (e) {
-      console.error("[DL] failed", e);
+      console.error("[FullScreen] failed", e);
       alert(String(e));
     }
   };
@@ -343,10 +346,10 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
             <div className="modal-actions">
               <button
                 className="result-btn result-btn-primary"
-                onClick={handleDownload}
-                disabled={!analysisImagePath}
+                onClick={handleOpenFullScreen}
+                disabled={!analysisImageUrl && !analysisImagePath}
               >
-                ダウンロード
+                全画面で開く
               </button>
               <button
                 className="result-btn result-btn-secondary"
@@ -355,10 +358,6 @@ export function ResultPage({ room, players, myPlayerId, onPlayAgain }: ResultPag
                 閉じる
               </button>
             </div>
-
-            {analysisText && (
-              <pre className="modal-text">{analysisText}</pre>
-            )}
           </div>
         </div>
       )}
